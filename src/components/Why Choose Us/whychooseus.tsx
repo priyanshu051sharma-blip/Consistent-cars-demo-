@@ -1,44 +1,58 @@
 import React from "react";
 import {
+  FaUserTie,
+  FaFemale,
+  FaCarSide,
+  FaBalanceScale,
+  FaLock,
+  FaClock,
+  FaThumbsUp,
   FaBolt,
-  FaMapMarkerAlt,
-  FaMoneyBillWave,
-  FaTools,
-  FaShieldAlt,
-  FaHeadset,
+  FaSmile,
+  FaCheckCircle,
 } from "react-icons/fa";
 
 const features = [
   {
     icon: <FaBolt size={36} color="#0077ff" />,
-    title: "Fast & Easy Booking",
-    description:
-      "Book your ride in just a few clicks, with no hassle or delays.",
+    title: "Quick Booking",
+    description: "Book a ride in seconds with just a few easy steps.",
+  },
+
+  {
+    icon: <FaUserTie size={36} color="#0077ff" />,
+    title: "Professional Drivers",
+    description: "Trained and courteous drivers for a safe journey.",
   },
   {
-    icon: <FaMapMarkerAlt size={36} color="#0077ff" />,
-    title: "Any Pickup Location",
-    description: "Choose your pickup spot, wherever you are in the city.",
+    icon: <FaFemale size={36} color="#0077ff" />,
+    title: "Safe for Women",
+    description: "We prioritize safety and comfort for every woman.",
   },
   {
-    icon: <FaMoneyBillWave size={36} color="#0077ff" />,
-    title: "No Booking Charges",
-    description: "Enjoy our services without paying any hidden fees.",
+    icon: <FaCarSide size={36} color="#0077ff" />,
+    title: "Clean Cabs",
+    description: "Hygienic and well-maintained cars for your comfort.",
   },
   {
-    icon: <FaTools size={36} color="#0077ff" />,
-    title: "Free Maintenance",
-    description: "All vehicles are maintained at no extra cost to you.",
+    icon: <FaBalanceScale size={36} color="#0077ff" />,
+    title: "Value for Money",
+    description: "Affordable rides without compromising on quality.",
   },
   {
-    icon: <FaShieldAlt size={36} color="#0077ff" />,
-    title: "Fully Insured",
-    description: "Drive worry-free with our comprehensive insurance coverage.",
+    icon: <FaLock size={36} color="#0077ff" />,
+    title: "We Value Your Security",
+    description: "Strong safety measures for every passenger.",
   },
   {
-    icon: <FaHeadset size={36} color="#0077ff" />,
-    title: "24/7 Support",
-    description: "Our team is here to assist you at any time, day or night.",
+    icon: <FaCheckCircle size={36} color="#0077ff" />,
+    title: "Reliable Drivers",
+    description: "All our drivers are background-checked and trustworthy.",
+  },
+  {
+    icon: <FaClock size={36} color="#0077ff" />,
+    title: "We Value Time",
+    description: "Punctual pickups and timely drop-offs guaranteed.",
   },
 ];
 
@@ -122,11 +136,11 @@ const WhyChooseUs: React.FC = () => {
         </div>
       </div>
       <style>{`
-                                .whychooseus-card:hover {
-                                        transform: translateY(-8px) scale(1.03);
-                                        box-shadow: 0 8px 32px rgba(0,0,0,0.12);
-                                }
-                        `}</style>
+        .whychooseus-card:hover {
+          transform: translateY(-8px) scale(1.03);
+          box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+        }
+      `}</style>
     </section>
   );
 };
