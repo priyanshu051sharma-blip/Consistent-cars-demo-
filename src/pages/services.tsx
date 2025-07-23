@@ -29,8 +29,9 @@ const locations: Location[] = [
   { name: "Lonavala", image: "/image/lonavala.jpg" },
   { name: "Goa", image: "/image/goa.jpg" },
   { name: "Mahabaleshwar", image: "/image/mahabaleshwar.jpg" },
-  { name: "Pune", image: "/image/pune-city.jpg" },
+  { name: "Sindhudurg", image: "/image/sindhudurg.jpeg" },
   { name: "Ratnagiri", image: "/image/ratnagiri.jpg" },
+  { name: "Aurangabad", image: "/image/aurangabad.jpg" },
 ];
 
 const Service = () => {

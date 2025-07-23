@@ -15,8 +15,9 @@ import {
 const features = [
   {
     icon: <FaBolt size={36} color="#0077ff" />,
-    title: "Quick Booking",
-    description: "Book a ride in seconds with just a few easy steps.",
+    title: "Hassle-Free Booking",
+    description:
+      "Book a ride in seconds in just 4 easy steps — at your fingertips.",
   },
 
   {
@@ -46,8 +47,9 @@ const features = [
   },
   {
     icon: <FaCheckCircle size={36} color="#0077ff" />,
-    title: "Reliable Drivers",
-    description: "All our drivers are background-checked and trustworthy.",
+    title: "Drive your Way",
+    description:
+      "Choose your preferred vehicle type for a personalized experience and drive your dream car.",
   },
   {
     icon: <FaClock size={36} color="#0077ff" />,
@@ -77,8 +79,8 @@ const WhyChooseUs: React.FC = () => {
           >
             Why Choose <span style={{ color: "#00ffff" }}>US?</span>
           </h2>
-          <p style={{ color: "#4a5568", fontSize: 18 }}>
-            Experience the difference with Consistent Cars
+          <p style={{ color: "#ffffff", fontSize: 18 }}>
+            OUR AIM IS TO MAKE YOUR TRAVEL SAFE AND MEMORABLE.
           </p>
         </div>
         <div
