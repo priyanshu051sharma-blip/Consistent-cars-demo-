@@ -1,28 +1,36 @@
 import React, { useState } from "react";
 import Image from "next/image";
-import {
-  BadgeCheck,
-  X,
-  Calendar,
-  Clock,
-  User,
-  Mail,
-  Phone,
-} from "lucide-react";
+import { BadgeCheck, X, Calendar, Clock } from "lucide-react";
 import { motion } from "framer-motion";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import AIChatBot from "../components/AIChabot/AIChatbot";
 import Pay from "../components/Pay/Pay";
+import { useRouter } from "next/navigation";
 
-type Car = { name: string; price: number; image: string };
-type Location = { name: string; image: string };
+type Car = {
+  name: string;
+  baseDayPrice: number;
+  hourlyRate: number;
+  image: string;
+};
 
 const cars: Car[] = [
-  { name: "Toyota Innova", price: 500, image: "/image/innova.png" },
-  { name: "Swift Dzire", price: 400, image: "/image/dzire.png" },
-  { name: "Honda City", price: 450, image: "/image/city.png" },
+  {
+    name: "Toyota Innova",
+    baseDayPrice: 5500,
+    hourlyRate: 22,
+    image: "/image/innova.png",
+  },
+  {
+    name: "Sedan",
+    baseDayPrice: 3750,
+    hourlyRate: 15,
+    image: "/image/dzire.png",
+  },
 ];
+
+type Location = { name: string; image: string };
 
 const locations: Location[] = [
   { name: "Airport Drop", image: "/image/airport.jpg" },
@@ -35,24 +43,41 @@ const locations: Location[] = [
 ];
 
 const Service = () => {
+  const router = useRouter();
+
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(
     null
   );
   const [selectedCar, setSelectedCar] = useState<Car | null>(null);
-  const [hours, setHours] = useState<number>(1);
+  const [hours, setHours] = useState<number>(24);
   const [date, setDate] = useState("");
   const [showForm, setShowForm] = useState(false);
-  const [userData, setUserData] = useState({ name: "", email: "", phone: "" });
+  const [userData, setUserData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    time: "",
+  });
 
   const isFormValid = userData.name && userData.email && userData.phone;
+
+  // ✅ New total logic
+  const calculateTotal = (car: Car, hours: number) => {
+    if (hours <= 24) return car.baseDayPrice;
+    return car.baseDayPrice + (hours - 24) * car.hourlyRate;
+  };
+
+  const grandTotal = selectedCar ? calculateTotal(selectedCar, hours) : 0;
 
   const generatePDF = () => {
     if (!selectedCar || !selectedLocation || !isFormValid) return;
 
-    const basePrice = selectedCar.price;
-    const subtotal = basePrice * hours;
-    const gst = subtotal * 1;
-    const discount = subtotal * 1;
+    const baseCost = selectedCar.baseDayPrice;
+    const extraHours = Math.max(0, hours - 24);
+    const extraCost = extraHours * selectedCar.hourlyRate;
+    const subtotal = baseCost + extraCost;
+    const gst = 0; // adjust if needed
+    const discount = 0;
     const total = subtotal + gst - discount;
 
     const doc = new jsPDF();
@@ -94,8 +119,9 @@ const Service = () => {
       startY: finalY + 5,
       head: [["Description", "Amount (Rs)"]],
       body: [
-        ["Base Price (per hour)", basePrice.toFixed(2)],
-        ["Total Hours", hours.toString()],
+        ["Base (first 24 hrs)", baseCost.toFixed(2)],
+        ["Extra Hours", extraHours.toString()],
+        ["Extra Hourly Charges", extraCost.toFixed(2)],
         ["Subtotal", subtotal.toFixed(2)],
         ["GST (0%)", gst.toFixed(2)],
         ["Discount (0%)", `-${discount.toFixed(2)}`],
@@ -115,17 +141,13 @@ const Service = () => {
       "Thank you for booking with ConsistentCars!",
       105,
       afterPriceY + 10,
-      { align: "center" }
+      {
+        align: "center",
+      }
     );
 
     doc.save("booking_invoice.pdf");
   };
-
-  const basePrice = selectedCar?.price || 0;
-  const subtotal = basePrice * hours;
-  const gst = subtotal * 1;
-  const discount = subtotal * 1;
-  const grandTotal = subtotal + gst - discount;
 
   return (
     <div className="min-h-screen bg-[#222f35] py-20 px-6 md:px-20 relative overflow-hidden">
@@ -143,6 +165,7 @@ const Service = () => {
         </p>
       </motion.div>
 
+      {/* Location selection */}
       {!selectedLocation && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
           {locations.map((loc, index) => (
@@ -153,15 +176,20 @@ const Service = () => {
               transition={{ duration: 0.6, delay: index * 0.1 }}
               viewport={{ once: true }}
               className="bg-white rounded-3xl shadow-lg hover:shadow-2xl transition duration-300 overflow-hidden group relative cursor-pointer"
-              onClick={() => setSelectedLocation(loc)}
+              onClick={() => {
+                if (loc.name === "Airport Drop") {
+                  router.push("/airport");
+                } else {
+                  setSelectedLocation(loc);
+                }
+              }}
             >
               <div className="relative w-full h-60">
                 <Image
                   src={loc.image}
                   alt={loc.name}
-                  layout="fill"
-                  objectFit="cover"
-                  className="group-hover:scale-105 transition-transform duration-500 ease-in-out"
+                  fill
+                  className="object-cover group-hover:scale-105 transition-transform duration-500 ease-in-out"
                 />
               </div>
               <div className="p-6 flex justify-center items-center">
@@ -172,6 +200,7 @@ const Service = () => {
         </div>
       )}
 
+      {/* Car selection */}
       {selectedLocation && !selectedCar && (
         <>
           <h3 className="text-3xl text-center text-white mb-8">
@@ -192,9 +221,8 @@ const Service = () => {
                   <Image
                     src={car.image}
                     alt={car.name}
-                    layout="fill"
-                    objectFit="cover"
-                    className="group-hover:scale-105 transition-transform duration-500 ease-in-out"
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-500 ease-in-out"
                   />
                 </div>
                 <div className="p-6 space-y-3">
@@ -202,7 +230,7 @@ const Service = () => {
                     {car.name}
                   </h3>
                   <p className="text-md text-gray-600">
-                    Starting at Rs {car.price}/hour
+                    ₹{car.baseDayPrice} for 24 hrs + ₹{car.hourlyRate}/hr
                   </p>
                   <button
                     onClick={() => setSelectedCar(car)}
@@ -217,6 +245,7 @@ const Service = () => {
         </>
       )}
 
+      {/* Booking form */}
       {selectedCar && !showForm && (
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
@@ -235,6 +264,7 @@ const Service = () => {
               <X size={24} />
             </button>
           </div>
+
           <div className="space-y-6">
             <div className="flex items-center gap-4">
               <Image
@@ -248,11 +278,20 @@ const Service = () => {
                 <h4 className="text-xl font-semibold text-gray-800">
                   {selectedCar.name}
                 </h4>
+                <div className="text-xl font-bold text-green-600">
+                  Total: Rs {grandTotal}
+                </div>
                 <p className="text-sm text-gray-500">
-                  Rs {selectedCar.price} per hour
+                  ₹{selectedCar.baseDayPrice} for first 24 hrs, then ₹
+                  {selectedCar.hourlyRate}/hr
+                </p>
+                <p className="text-sm text-red-600">
+                  * Toll charges (if any) will be additional.
                 </p>
               </div>
             </div>
+
+            {/* Date */}
             <div>
               <label className="block text-gray-700 mb-2">
                 <Calendar size={16} className="inline-block mr-2" /> Select
@@ -262,9 +301,26 @@ const Service = () => {
                 type="date"
                 className="border w-full px-4 py-2 rounded-lg text-black"
                 value={date}
+                min={new Date().toISOString().split("T")[0]} // disables past dates
                 onChange={(e) => setDate(e.target.value)}
               />
             </div>
+
+            {/* Time */}
+            <div>
+              <label className="block text-gray-700 mb-2">
+                <Clock size={16} className="inline-block mr-2" /> Select Time:
+              </label>
+              <input
+                type="time"
+                className="border w-full px-4 py-2 rounded-lg text-black"
+                onChange={(e) =>
+                  setUserData({ ...userData, time: e.target.value })
+                }
+              />
+            </div>
+
+            {/* Hours */}
             <div>
               <label className="block text-gray-700 mb-2">
                 <Clock size={16} className="inline-block mr-2" /> Number of
@@ -272,18 +328,31 @@ const Service = () => {
               </label>
               <input
                 type="number"
-                min="1"
                 className="border w-full px-4 py-2 rounded-lg text-black"
                 value={hours}
-                onChange={(e) => setHours(Number(e.target.value))}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value, 10);
+                  setHours(isNaN(val) ? 0 : val); // keep it always number
+                }}
               />
+              <p className="text-sm text-gray-500 mt-1">
+                * Minimum booking is 24 hours.
+              </p>
             </div>
-            <div className="text-xl font-bold text-green-600">
-              Total: Rs {selectedCar.price * hours}
-            </div>
+
             <button
-              onClick={() => setShowForm(true)}
-              className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700 transition duration-200"
+              onClick={() => {
+                if (!selectedCar || !selectedLocation || !hours) {
+                  alert("Please select all fields before proceeding.");
+                  return;
+                }
+                if (hours < 24) {
+                  alert("Booking cannot be less than 24 hours.");
+                  return;
+                }
+                setShowForm(true); // <-- use showForm, not showPay
+              }}
+              className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700"
             >
               Proceed
             </button>
@@ -291,6 +360,7 @@ const Service = () => {
         </motion.div>
       )}
 
+      {/* Payment form */}
       {showForm && (
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
@@ -304,16 +374,23 @@ const Service = () => {
             </h3>
             <button
               onClick={() => setShowForm(false)}
-              className="text-white hover:text-red-500"
+              className="text-gray-500 hover:text-red-500"
             >
               <X size={24} />
             </button>
           </div>
           <div className="space-y-6">
             <Pay amount={grandTotal} />
+            <button
+              onClick={generatePDF}
+              className="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition duration-200"
+            >
+              Download Invoice
+            </button>
           </div>
         </motion.div>
       )}
+
       <AIChatBot />
     </div>
   );
