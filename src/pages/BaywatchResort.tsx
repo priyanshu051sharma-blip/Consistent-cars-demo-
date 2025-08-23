@@ -22,7 +22,7 @@ interface jsPDFWithPlugin extends jsPDF {
 const roomTypes = [
   {
     name: "Deluxe Suite, Sea View",
-    price: 8500,
+    price: 8000,
     images: [
       "/image/baywatch/del1.jpg",
       "/image/baywatch/del2.jpg",
@@ -47,7 +47,7 @@ const roomTypes = [
   },
   {
     name: "Superior Suite, Sea View",
-    price: 8500,
+    price: 8000,
     images: [
       "/image/baywatch/sup1.jpg",
       "/image/baywatch/sup2.jpg",

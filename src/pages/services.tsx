@@ -11,7 +11,7 @@ import { useRouter } from "next/navigation";
 type Car = {
   name: string;
   baseDayPrice: number;
-  hourlyRate: number;
+  dailyRate: number;
   image: string;
 };
 
@@ -19,13 +19,13 @@ const cars: Car[] = [
   {
     name: "Toyota Innova",
     baseDayPrice: 5500,
-    hourlyRate: 22,
+    dailyRate: 5500,
     image: "/image/innova.png",
   },
   {
     name: "Sedan",
     baseDayPrice: 3750,
-    hourlyRate: 15,
+    dailyRate: 3750,
     image: "/image/dzire.png",
   },
 ];
@@ -38,7 +38,7 @@ const locations: Location[] = [
   { name: "Goa", image: "/image/goa.jpg" },
   { name: "Mahabaleshwar", image: "/image/mahabaleshwar.jpg" },
   { name: "Sindhudurg", image: "/image/sindhudurg.jpeg" },
-  { name: "Ratnagiri", image: "/image/ratnagiri.jpg" },
+  { name: "Ganpatipule", image: "/image/ratnagiri.jpg" },
   { name: "Aurangabad", image: "/image/aurangabad.jpg" },
 ];
 
@@ -49,7 +49,7 @@ const Service = () => {
     null
   );
   const [selectedCar, setSelectedCar] = useState<Car | null>(null);
-  const [hours, setHours] = useState<number>(24);
+  const [hours, setHours] = useState<number>(1);
   const [date, setDate] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [userData, setUserData] = useState({
@@ -63,8 +63,8 @@ const Service = () => {
 
   // ✅ New total logic
   const calculateTotal = (car: Car, hours: number) => {
-    if (hours <= 24) return car.baseDayPrice;
-    return car.baseDayPrice + (hours - 24) * car.hourlyRate;
+    if (hours <= 1) return car.baseDayPrice;
+    return car.baseDayPrice + (hours - 1) * car.dailyRate;
   };
 
   const grandTotal = selectedCar ? calculateTotal(selectedCar, hours) : 0;
@@ -73,9 +73,8 @@ const Service = () => {
     if (!selectedCar || !selectedLocation || !isFormValid) return;
 
     const baseCost = selectedCar.baseDayPrice;
-    const extraHours = Math.max(0, hours - 24);
-    const extraCost = extraHours * selectedCar.hourlyRate;
-    const subtotal = baseCost + extraCost;
+    const days = Math.ceil(hours / 24); // round up to nearest day
+    const subtotal = baseCost * days;
     const gst = 0; // adjust if needed
     const discount = 0;
     const total = subtotal + gst - discount;
@@ -119,10 +118,7 @@ const Service = () => {
       startY: finalY + 5,
       head: [["Description", "Amount (Rs)"]],
       body: [
-        ["Base (first 24 hrs)", baseCost.toFixed(2)],
-        ["Extra Hours", extraHours.toString()],
-        ["Extra Hourly Charges", extraCost.toFixed(2)],
-        ["Subtotal", subtotal.toFixed(2)],
+        [`Car (${days} day${days > 1 ? "s" : ""})`, subtotal.toFixed(2)],
         ["GST (0%)", gst.toFixed(2)],
         ["Discount (0%)", `-${discount.toFixed(2)}`],
         ["Grand Total", total.toFixed(2)],
@@ -230,7 +226,7 @@ const Service = () => {
                     {car.name}
                   </h3>
                   <p className="text-md text-gray-600">
-                    ₹{car.baseDayPrice} for 24 hrs + ₹{car.hourlyRate}/hr
+                    ₹{car.baseDayPrice} per day
                   </p>
                   <button
                     onClick={() => setSelectedCar(car)}
@@ -261,7 +257,7 @@ const Service = () => {
               onClick={() => setSelectedCar(null)}
               className="text-gray-500 hover:text-red-500"
             >
-              <X size={24} />
+              <X size={1} />
             </button>
           </div>
 
@@ -282,8 +278,7 @@ const Service = () => {
                   Total: Rs {grandTotal}
                 </div>
                 <p className="text-sm text-gray-500">
-                  ₹{selectedCar.baseDayPrice} for first 24 hrs, then ₹
-                  {selectedCar.hourlyRate}/hr
+                  ₹{selectedCar.baseDayPrice} per day
                 </p>
                 <p className="text-sm text-red-600">
                   * Toll charges (if any) will be additional.
@@ -324,20 +319,15 @@ const Service = () => {
             <div>
               <label className="block text-gray-700 mb-2">
                 <Clock size={16} className="inline-block mr-2" /> Number of
-                Hours:
+                Days:
               </label>
               <input
                 type="number"
                 className="border w-full px-4 py-2 rounded-lg text-black"
                 value={hours}
-                onChange={(e) => {
-                  const val = parseInt(e.target.value, 10);
-                  setHours(isNaN(val) ? 0 : val); // keep it always number
-                }}
+                min={1}
+                onChange={(e) => setHours(Number(e.target.value))}
               />
-              <p className="text-sm text-gray-500 mt-1">
-                * Minimum booking is 24 hours.
-              </p>
             </div>
 
             <button
@@ -346,7 +336,7 @@ const Service = () => {
                   alert("Please select all fields before proceeding.");
                   return;
                 }
-                if (hours < 24) {
+                if (hours < 1) {
                   alert("Booking cannot be less than 24 hours.");
                   return;
                 }
