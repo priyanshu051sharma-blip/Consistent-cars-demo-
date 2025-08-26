@@ -251,7 +251,7 @@ export default function BaywatchResort() {
               <div className="mb-2">Subtotal: ₹ {total}</div>
               <div className="mb-2">GST (12%): ₹ {gst.toFixed(2)}</div>
               <div className="mb-2">
-                Discount (5%): -₹ {discount.toFixed(2)}
+                Discount (15%): -₹ {discount.toFixed(2)}
               </div>
               <div className="font-bold text-2xl text-green-400">
                 Grand Total: ₹ {grandTotal.toFixed(2)}
