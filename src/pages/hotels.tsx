@@ -15,7 +15,7 @@ const locations: Location[] = [
     hotels: [
       {
         name: "BaywatchResort",
-        pricePerNight: 8500,
+        pricePerNight: 8000,
         image: "/image/baywatch/35.jpg",
       },
     ],

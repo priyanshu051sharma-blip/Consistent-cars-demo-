@@ -84,7 +84,7 @@ export default function BaywatchResort() {
 
   const total = selectedRoom.price * nights;
   const gst = total * 0.12;
-  const discount = total * 0.05;
+  const discount = total * 0.15;
   const grandTotal = total + gst - discount;
 
   const generatePDF = () => {
@@ -264,75 +264,6 @@ export default function BaywatchResort() {
               <Calendar size={20} className="inline mr-2" /> Booking Form
             </h3>
             <Pay amount={grandTotal} />
-
-            {/* 
-            <div className="space-y-3">
-              <div>
-                <label className="block mb-1">
-                  <User size={16} className="inline mr-2" /> Full Name:
-                </label>
-                <input
-                  type="text"
-                  className="border w-full px-4 py-2 rounded-lg"
-                  value={userData.name}
-                  onChange={(e) =>
-                    setUserData({ ...userData, name: e.target.value })
-                  }
-                />
-              </div>
-
-              <div>
-                <label className="block mb-1">
-                  <Mail size={16} className="inline mr-2" /> Email:
-                </label>
-                <input
-                  type="email"
-                  className="border w-full px-4 py-2 rounded-lg"
-                  value={userData.email}
-                  onChange={(e) =>
-                    setUserData({ ...userData, email: e.target.value })
-                  }
-                />
-              </div>
-
-              <div>
-                <label className="block mb-1">
-                  <Phone size={16} className="inline mr-2" /> Phone:
-                </label>
-                <input
-                  type="tel"
-                  className="border w-full px-4 py-2 rounded-lg"
-                  value={userData.phone}
-                  onChange={(e) =>
-                    setUserData({ ...userData, phone: e.target.value })
-                  }
-                />
-              </div>
-
-              <div>
-                <label className="block mb-1">
-                  <Calendar size={16} className="inline mr-2" /> Check-in Date:
-                </label>
-                <input
-                  type="date"
-                  className="border w-full px-4 py-2 rounded-lg"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                />
-              </div>
-
-              <button
-                onClick={handlePayment}
-                disabled={!isFormValid}
-                className={`w-full py-3 rounded-xl font-semibold mt-4 transition ${
-                  isFormValid
-                    ? "bg-blue-600 text-white hover:bg-blue-700"
-                    : "bg-gray-400 text-white cursor-not-allowed"
-                }`}
-              >
-                Confirm Booking & Pay
-              </button> */}
-            {/* </div> */}
           </div>
         </div>
       </div>
