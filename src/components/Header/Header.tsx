@@ -1,16 +1,28 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
+import { useRouter } from "next/router";
+import { isAdminLoggedIn, clearAdminAuth } from "@/utils/auth";
 
 const Header: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    setIsAdmin(isAdminLoggedIn());
+  }, []);
+
+  function handleLogout() {
+    clearAdminAuth();
+    setIsAdmin(false);
+    router.push("/");
+  }
 
   return (
     <header className="bg-gradient-to-r from-[#232526] via-[#2f2e2e] to-[#0f2027] shadow-lg relative z-10">
-      {/* Decorative top bar */}
       <div className="h-1 w-full bg-gradient-to-r from-[#00ffff] via-[#00bfff] to-[#00ffff] animate-pulse" />
       <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between relative">
-        {/* Logo on far left */}
         <Link href="/" className="flex items-center space-x-3">
           <div className="flex items-center space-x-3 flex-shrink-0">
             <span className="relative">
@@ -36,17 +48,16 @@ const Header: React.FC = () => {
           </div>
         </Link>
 
-        {/* Hamburger Menu - Mobile */}
         <div className="md:hidden">
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="text-white hover:text-[#00ffff]"
+            aria-label="Toggle menu"
           >
             {mobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
           </button>
         </div>
 
-        {/* Links in the center - Desktop */}
         <nav className="space-x-8 flex-1 justify-center hidden md:flex">
           <Link
             href="/hotels"
@@ -78,27 +89,31 @@ const Header: React.FC = () => {
           </Link>
         </nav>
 
-        {/* Profile button on far right */}
-        {/* <div className="hidden md:flex items-center flex-shrink-0">
-          <Link href="/profile">
-            <button className="flex items-center bg-gradient-to-r from-[#00ffff] to-[#00bfff] text-gray-900 px-5 py-2 rounded-full font-bold shadow-lg hover:from-[#00bfff] hover:to-[#00ffff] hover:text-gray-600 transition-all duration-200 border-2 border-[#00ffff]">
-              <svg
-                className="w-6 h-6 mr-2 text-black"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2}
-                viewBox="0 0 24 24"
+        <div className="hidden md:flex items-center flex-shrink-0 space-x-3">
+          {!isAdmin ? (
+            <Link href="/admin-login">
+              <button className="flex items-center bg-gradient-to-r from-[#00ffff] to-[#00bfff] text-gray-900 px-4 py-2 rounded-full font-bold shadow-lg hover:from-[#00bfff] hover:to-[#00ffff] hover:text-gray-600 transition-all duration-200 border-2 border-[#00ffff]">
+                Admin Login
+              </button>
+            </Link>
+          ) : (
+            <>
+              <Link href="/admin-dashboard">
+                <button className="px-4 py-2 rounded-full font-semibold border border-[#00ffff] hover:bg-[#0b3036]">
+                  Dashboard
+                </button>
+              </Link>
+              <button
+                onClick={handleLogout}
+                className="px-4 py-2 bg-[#ff6b6b] text-white rounded-full font-semibold hover:bg-[#ff5252] transition"
               >
-                <circle cx="12" cy="8" r="4" />
-                <path d="M4 20c0-4 4-7 8-7s8 3 8 7" />
-              </svg>
-              Profile
-            </button>
-          </Link>
-        </div> */}
+                Logout
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
-      {/* Mobile Menu Drawer */}
       {mobileMenuOpen && (
         <div className="md:hidden px-6 pb-4">
           <nav className="flex flex-col gap-3 mt-4">
@@ -126,42 +141,32 @@ const Header: React.FC = () => {
             >
               Contact
             </Link>
-            {/* <Link
-              href="/profile"
-              className="text-gray-900 bg-gradient-to-r from-[#00ffff] to-[#00bfff] px-4 py-2 rounded-full font-bold text-center shadow-md hover:from-[#00bfff] hover:to-[#00ffff] transition-all duration-200 border border-[#00ffff]"
-            >
-              Profile
-            </Link> */}
+            {!isAdmin ? (
+              <Link
+                href="/admin-login"
+                className="text-gray-900 bg-gradient-to-r from-[#00ffff] to-[#00bfff] px-4 py-2 rounded-full font-bold text-center shadow-md border border-[#00ffff]"
+              >
+                Admin Login
+              </Link>
+            ) : (
+              <>
+                <Link
+                  href="/admin-dashboard"
+                  className="text-gray-200 px-4 py-2 rounded-full font-bold text-center border border-[#00ffff]"
+                >
+                  Dashboard
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="text-white px-4 py-2 rounded-full bg-[#ff6b6b]"
+                >
+                  Logout
+                </button>
+              </>
+            )}
           </nav>
         </div>
       )}
-
-      <style jsx>{`
-        .animate-spin-slow {
-          animation: spin 6s linear infinite;
-        }
-        @keyframes spin {
-          0% {
-            transform: rotate(0deg);
-          }
-          100% {
-            transform: rotate(360deg);
-          }
-        }
-        .animate-gradient-x {
-          background-size: 200% 200%;
-          animation: gradient-x 3s ease-in-out infinite;
-        }
-        @keyframes gradient-x {
-          0%,
-          100% {
-            background-position: left center;
-          }
-          50% {
-            background-position: right center;
-          }
-        }
-      `}</style>
     </header>
   );
 };
