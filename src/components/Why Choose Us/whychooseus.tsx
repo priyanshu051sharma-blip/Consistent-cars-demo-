@@ -1,4 +1,5 @@
 import React from "react";
+import { motion } from "framer-motion";
 import {
   FaUserTie,
   FaFemale,
@@ -6,53 +7,48 @@ import {
   FaBalanceScale,
   FaLock,
   FaClock,
-  FaThumbsUp,
   FaBolt,
-  FaSmile,
   FaCheckCircle,
 } from "react-icons/fa";
 
 const features = [
   {
-    icon: <FaBolt size={36} color="#0077ff" />,
+    icon: FaBolt,
     title: "Hassle-Free Booking",
-    description:
-      "Book a ride in seconds in just 4 easy steps — at your fingertips.",
+    description: "Book a ride in seconds in just 4 easy steps — at your fingertips.",
   },
-
   {
-    icon: <FaUserTie size={36} color="#0077ff" />,
+    icon: FaUserTie,
     title: "Professional Drivers",
     description: "Trained and courteous drivers for a safe journey.",
   },
   {
-    icon: <FaFemale size={36} color="#0077ff" />,
+    icon: FaFemale,
     title: "Safe for Women",
     description: "We prioritize safety and comfort for every woman.",
   },
   {
-    icon: <FaCarSide size={36} color="#0077ff" />,
+    icon: FaCarSide,
     title: "Clean Cabs",
     description: "Hygienic and well-maintained cars for your comfort.",
   },
   {
-    icon: <FaBalanceScale size={36} color="#0077ff" />,
+    icon: FaBalanceScale,
     title: "Value for Money",
     description: "Affordable rides without compromising on quality.",
   },
   {
-    icon: <FaLock size={36} color="#0077ff" />,
+    icon: FaLock,
     title: "We Value Your Security",
     description: "Strong safety measures for every passenger.",
   },
   {
-    icon: <FaCheckCircle size={36} color="#0077ff" />,
+    icon: FaCheckCircle,
     title: "Drive your Way",
-    description:
-      "Choose your preferred vehicle type for a personalized experience and drive your dream car.",
+    description: "Choose your vehicle type for a personalized experience.",
   },
   {
-    icon: <FaClock size={36} color="#0077ff" />,
+    icon: FaClock,
     title: "We Value Time",
     description: "Punctual pickups and timely drop-offs guaranteed.",
   },
@@ -60,89 +56,52 @@ const features = [
 
 const WhyChooseUs: React.FC = () => {
   return (
-    <section
-      style={{
-        background: "#222f35",
-        padding: "60px 0",
-      }}
-    >
-      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px" }}>
-        <div style={{ textAlign: "center", marginBottom: 48 }}>
-          <h2
-            style={{
-              fontSize: 36,
-              fontWeight: 700,
-              color: "#ffffff",
-              marginBottom: 8,
-              letterSpacing: 1,
-            }}
+    <section className="py-24 bg-[#0f172a] relative overflow-hidden">
+      <div className="max-w-7xl mx-auto px-6 relative z-10">
+        <div className="text-center mb-16">
+          <motion.h2
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-4xl md:text-5xl font-bold text-white mb-4"
           >
-            Why Choose <span style={{ color: "#00ffff" }}>US?</span>
-          </h2>
-          <p style={{ color: "#ffffff", fontSize: 18 }}>
+            Why Choose <span className="text-cyan-400">US?</span>
+          </motion.h2>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            viewport={{ once: true }}
+            className="text-slate-400 text-lg tracking-wide uppercase"
+          >
             OUR AIM IS TO MAKE YOUR TRAVEL SAFE AND MEMORABLE.
-          </p>
+          </motion.p>
         </div>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-            gap: 32,
-          }}
-        >
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {features.map((feature, idx) => (
-            <div
+            <motion.div
               key={idx}
-              style={{
-                background: "#fff",
-                borderRadius: 16,
-                boxShadow: "0 4px 24px rgba(0,0,0,0.07)",
-                padding: "32px 24px",
-                textAlign: "center",
-                transition: "transform 0.2s, box-shadow 0.2s",
-                cursor: "pointer",
-              }}
-              className="whychooseus-card"
+              initial={{ opacity: 0, scale: 0.9 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              transition={{ delay: idx * 0.05 }}
+              whileHover={{ y: -10 }}
+              viewport={{ once: true }}
+              className="bg-white/5 backdrop-blur-sm border border-white/10 p-8 rounded-3xl text-center group transition-all hover:bg-white/10 hover:shadow-xl hover:shadow-cyan-900/20"
             >
-              <div
-                style={{
-                  width: 64,
-                  height: 64,
-                  margin: "0 auto 20px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  background:
-                    "linear-gradient(135deg, #e0e7ef 0%, #c7d2fe 100%)",
-                  borderRadius: "50%",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-                }}
-              >
-                {feature.icon}
+              <div className="w-16 h-16 mx-auto mb-6 flex items-center justify-center bg-gradient-to-br from-cyan-500 to-blue-600 rounded-full text-white shadow-lg group-hover:scale-110 transition-transform">
+                <feature.icon size={28} />
               </div>
-              <h4
-                style={{
-                  fontSize: 20,
-                  fontWeight: 600,
-                  color: "#22223b",
-                  marginBottom: 12,
-                }}
-              >
+              <h4 className="text-xl font-bold text-white mb-3 group-hover:text-cyan-300 transition-colors">
                 {feature.title}
               </h4>
-              <p style={{ color: "#6b7280", fontSize: 16, minHeight: 48 }}>
+              <p className="text-slate-400 leading-relaxed text-sm">
                 {feature.description}
               </p>
-            </div>
+            </motion.div>
           ))}
         </div>
       </div>
-      <style>{`
-        .whychooseus-card:hover {
-          transform: translateY(-8px) scale(1.03);
-          box-shadow: 0 8px 32px rgba(0,0,0,0.12);
-        }
-      `}</style>
     </section>
   );
 };

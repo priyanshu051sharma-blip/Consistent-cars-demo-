@@ -1,107 +1,143 @@
 import React from "react";
+import Image from "next/image";
+import { motion } from "framer-motion";
+import { Users, Award, Smile } from "lucide-react";
 import AIChatBot from "../components/AIChabot/AIChatbot";
 
 const stats = [
-  { number: "18", label: "Years of Experience" },
-  { number: "200+", label: "Successful Rides" },
-  { number: "450+", label: "Happy Customers" },
+  { number: "18+", label: "Years Experience", icon: Award },
+  { number: "200+", label: "Successful Rides", icon: Users },
+  { number: "450+", label: "Happy Customers", icon: Smile },
 ];
 
 const About: React.FC = () => {
   return (
-    <main className="bg-[#222f35] min-h-screen">
-      <section className="py-16 px-6 md:px-16 text-white">
-        <div className="max-w-5xl mx-auto">
-          <h1 className="text-5xl font-extrabold mb-6 text-center text-[#00ffff]">
-            About Us
-          </h1>
-          <p className="mb-4 text-lg">
-            Consistent Cars (CC) is a premier Car Rental company and the best
-            Cab service provider in Pune renowned since 2005. Mr. Himanshu
-            Mandke, our leading agency, is a management graduate and he worked
-            as a Sr. Manager in India’s leading travel company, started
-            Consistent Cars (CC) with just one car though it was a challenge to
-            meet the requirements of the customers with just one car at the
-            disposal. But the sincerity to serve did not go unnoticed and soon
-            the company was associated with many cars and corporate clients.
-          </p>
-          <p className="mb-4 text-lg">
-            We are one of the leading online car service company agency
-            providing reliable Local and outstation cabs with online booking,
-            tracking & payment facility.
-          </p>
+    <div className="min-h-screen bg-[#0f172a] text-white font-sans selection:bg-cyan-500/30">
+      {/* Background Elements */}
+      <div className="fixed top-0 right-0 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[100px] pointer-events-none" />
+      <div className="fixed bottom-0 left-0 w-[500px] h-[500px] bg-cyan-500/10 rounded-full blur-[100px] pointer-events-none" />
 
-          <h2 className="text-3xl font-bold mt-12 mb-4 text-[#00ffff]">
-            Our Customers: Who We Serve
-          </h2>
-          <p className="mb-6 text-lg">
-            At Consistent Cars, we cater to a diverse range of travelers in
-            Pune, Goa, and nearby destinations, all of whom share a need for
-            reliable, comfortable, and convenient transportation.
-          </p>
+      <main className="relative z-10 max-w-7xl mx-auto px-6 py-20 md:px-12">
+        <AIChatBot />
 
-          <div className="grid gap-8">
+        {/* Hero Section */}
+        <div className="text-center mb-20">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+          >
+            <h1 className="text-5xl md:text-7xl font-extrabold mb-6 tracking-tight">
+              Driven by <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">Service</span>
+            </h1>
+            <p className="text-xl text-slate-400 max-w-3xl mx-auto">
+              Since 2005, we have been redefining the travel experience with reliability, comfort, and a passion for the road.
+            </p>
+          </motion.div>
+        </div>
+
+        {/* Story Section */}
+        <section className="mb-24 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            className="space-y-6"
+          >
+            <h2 className="text-3xl font-bold text-white border-l-4 border-cyan-500 pl-4">Our Journey</h2>
+            <div className="text-slate-300 space-y-4 leading-relaxed text-lg">
+              <p>
+                Consistent Cars (CC) began as a humble vision by Mr. Himanshu Mandke, a management graduate with deep roots in the travel industry. Starting with just a single car, the mission was simple but ambitious: to provide a travel experience that puts the customer first.
+              </p>
+              <p>
+                Over 18 years, that single car blossomed into a premier fleet. We didn't just grow in numbers; we grew in trust. Today, we are proud to be one of Pune's leading car rental agencies, serving corporate clients, tourists, and families with the same sincerity we started with.
+              </p>
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            className="relative h-[400px] w-full rounded-3xl overflow-hidden shadow-2xl border border-white/10"
+          >
+            {/* About Image */}
+            <div className="relative h-full w-full group">
+              <Image
+                src="/image/about-us.png"
+                fill
+                alt="Our Premium Fleet"
+                className="object-cover transition-transform duration-700 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent" />
+            </div>
+          </motion.div>
+        </section>
+
+        {/* Stats */}
+        {/* <section className="mb-24">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {stats.map((stat, idx) => (
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.1 }}
+                viewport={{ once: true }}
+                className="bg-white/5 backdrop-blur-md border border-white/10 p-8 rounded-3xl text-center hover:bg-white/10 transition-all group"
+              >
+                <div className="flex justify-center mb-4">
+                  <div className="p-4 rounded-full bg-cyan-500/20 text-cyan-400 group-hover:scale-110 transition-transform">
+                    <stat.icon size={32} />
+                  </div>
+                </div>
+                <h3 className="text-5xl font-bold text-white mb-2">{stat.number}</h3>
+                <p className="text-slate-400 font-medium">{stat.label}</p>
+              </motion.div>
+            ))}
+          </div>
+        </section> */}
+
+        {/* Customers Section */}
+        <section className="max-w-5xl mx-auto">
+          <h2 className="text-3xl font-bold text-center mb-12">Who We Serve</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {[
               {
                 title: "Business Travelers",
-                desc: "Business travelers rely on us for timely and stress-free airport transfers and corporate travel, ensuring they arrive at their destinations on time and in comfort.",
+                desc: "Timely airport transfers and corporate travel solutions for professionals who value punctuality.",
               },
               {
                 title: "Tourists & Vacationers",
-                desc: "Tourists and vacationers enjoy hassle-free journeys to top destinations like Lonavala, Mahabaleshwar, and Goa, with our safe and comfortable vehicles offering the perfect way to explore.",
+                desc: "Hassle-free journeys to Konkan, Goa, and Mahabaleshwar. Relax and enjoy the view.",
               },
               {
                 title: "Families & Groups",
-                desc: "Families and groups appreciate our spacious vehicles for group trips, weekend getaways, and family vacations, providing ample space and comfort for everyone.",
+                desc: "Spacious SUVs and vans ensuring comfort for everyone on weekend getaways and family trips.",
               },
               {
                 title: "Locals & Residents",
-                desc: "Locals and residents choose Consistent Cars for intercity travel, airport drops, and special events, knowing they can rely on our punctual and professional service.",
+                desc: "Dependable intercity travel and special event transport for the people of Pune.",
               },
             ].map((item, idx) => (
-              <div
+              <motion.div
                 key={idx}
-                className="bg-white p-6 rounded-xl shadow-md border-l-4 border-blue-600"
+                whileHover={{ scale: 1.02 }}
+                className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 border border-white/10 p-8 rounded-2xl shadow-lg"
               >
-                <h3 className="text-2xl font-semibold text-gray-900 mb-2">
+                <h3 className="text-xl font-bold text-cyan-400 mb-3 block">
                   {item.title}
                 </h3>
-                <p className="text-gray-700 text-md">{item.desc}</p>
-              </div>
+                <p className="text-slate-300 leading-relaxed">{item.desc}</p>
+              </motion.div>
             ))}
-
-            <p className="mt-6 text-lg">
-              Our customers trust us for personalized, high-quality service
-              every step of the way, whether they’re traveling for business,
-              leisure, or a family outing.
-            </p>
-            <p className="text-lg">
-              From the past 15 years, we are highly recommended local and
-              outstation Car on the Hire service provider in entire India for
-              top quality service at discounted rates, for complete transparency
-              and outstanding customer service.
-            </p>
           </div>
-        </div>
-      </section>
 
-      <section className="bg-[#222f35] py-12 px-6">
-        <div className="max-w-4xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-8 text-center">
-          {stats.map((stat, idx) => (
-            <div
-              key={idx}
-              className="bg-white p-6 rounded-xl shadow-lg transform hover:scale-105 transition duration-300"
-            >
-              <h4 className="text-4xl font-extrabold text-blue-900 mb-2">
-                {stat.number}
-              </h4>
-              <p className="text-gray-800 font-medium text-lg">{stat.label}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-      <AIChatBot />
-    </main>
+
+        </section>
+
+      </main>
+    </div>
   );
 };
 

@@ -12,11 +12,13 @@ export function isAdminLoggedIn(): boolean {
 export function setAdminLoggedIn(v: boolean) {
   try {
     localStorage.setItem(ADMIN_KEY, v ? "true" : "false");
-  } catch {}
+  } catch { }
 }
 
 export function clearAdminAuth() {
   try {
     localStorage.removeItem(ADMIN_KEY);
-  } catch {}
+  } catch { }
 }
+
+export const logoutAdmin = clearAdminAuth;

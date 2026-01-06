@@ -99,13 +99,13 @@ const Header: React.FC = () => {
           ) : (
             <>
               <Link href="/admin-dashboard">
-                <button className="px-4 py-2 rounded-full font-semibold border border-[#00ffff] hover:bg-[#0b3036]">
+                <button className="px-5 py-2 rounded-full font-bold bg-gradient-to-r from-cyan-500/10 to-blue-500/10 text-cyan-400 border border-cyan-500/50 hover:bg-cyan-500 hover:text-white hover:border-cyan-400 transition-all shadow-[0_0_15px_rgba(6,182,212,0.15)] hover:shadow-[0_0_20px_rgba(6,182,212,0.4)]">
                   Dashboard
                 </button>
               </Link>
               <button
                 onClick={handleLogout}
-                className="px-4 py-2 bg-[#ff6b6b] text-white rounded-full font-semibold hover:bg-[#ff5252] transition"
+                className="px-5 py-2 bg-red-500/10 text-red-400 rounded-full font-bold border border-red-500/30 hover:bg-red-500 hover:text-white hover:border-red-500 transition-all"
               >
                 Logout
               </button>

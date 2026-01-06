@@ -1,23 +1,9 @@
 "use client";
-import React, { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
-import {
-  FaMoneyBillAlt,
-  FaUserAlt,
-  FaEnvelope,
-  FaPhoneAlt,
-} from "react-icons/fa";
+import React, { useEffect } from "react";
 import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
-const Pay = ({ amount }) => {
-  const [checkoutData, setCheckoutData] = useState(null);
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm();
-
+const Pay = ({ amount, name, email, phone, bookingDetails }) => {
   useEffect(() => {
     // Load Razorpay script
     const script = document.createElement("script");
@@ -26,37 +12,55 @@ const Pay = ({ amount }) => {
     document.body.appendChild(script);
   }, []);
 
-  const onSubmit = (data) => {
-    setCheckoutData({ ...data, amount });
-    processPayment({ ...data, amount });
-  };
-
-  const processPayment = (data) => {
+  const handlePayment = () => {
     if (typeof window === "undefined" || !window.Razorpay) {
       alert("Razorpay SDK failed to load. Please refresh the page.");
       return;
     }
 
+    if (!name || !email || !phone) {
+      alert("Please fill in all contact details first.");
+      return;
+    }
+
     const options = {
       key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-      amount: Math.round(data.amount * 100),
+      amount: Math.round(amount * 100),
       currency: "INR",
-      name: "Baywatch Resort",
-      description: "Room Booking",
+      name: "Consistent Cars",
+      description: `Booking: ${bookingDetails?.vehicle || 'Vehicle'}`,
       image: "/image/logo.png",
-      handler: function (response) {
-        alert("Payment Successful!");
+      handler: async function (response) {
+        // Payment Success
         console.log("Razorpay Response:", response);
-        generatePDF(data, response);
-      },
 
+        try {
+          await fetch('/api/bookings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name,
+              email,
+              phone,
+              type: bookingDetails?.vehicle === "Hotel Stay" ? "Hotel" : "Transport",
+              details: bookingDetails,
+              amount: amount
+            })
+          });
+        } catch (error) {
+          console.error("Failed to save booking:", error);
+        }
+
+        generatePDF(response);
+        alert("Payment Successful! Invoice downloaded.");
+      },
       prefill: {
-        name: data.name,
-        email: data.email,
-        contact: data.phone,
+        name: name,
+        email: email,
+        contact: phone,
       },
       theme: {
-        color: "#00ffff",
+        color: "#0891b2", // Cyan-600 to match theme
       },
     };
 
@@ -69,142 +73,96 @@ const Pay = ({ amount }) => {
     rzp.open();
   };
 
-  const generatePDF = (data, response) => {
+  const generatePDF = (response) => {
     const doc = new jsPDF();
 
-    const baseAmount = data.amount;
-    const gst = 0;
-    const discount = 0;
-    const total = baseAmount + gst - discount;
+    // -- Brand Colors --
+    const primaryColor = [8, 145, 178]; // Cyan-600
+    const secondaryColor = [64, 64, 64]; // Gray-700
 
-    // Header
-    doc.setFillColor(0, 191, 255);
+    // -- Header --
+    doc.setFillColor(...primaryColor);
     doc.rect(0, 0, 210, 40, "F");
+
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(24);
-    doc.text("ConsistentCars Invoice", 105, 20, { align: "center" });
+    doc.setFontSize(26);
+    doc.setFont("helvetica", "bold");
+    doc.text("INVOICE", 180, 25, { align: "right" });
 
-    // Customer Info
+    doc.setFontSize(16);
+    doc.text("Consistent Cars", 14, 25);
+
+    // -- Invoice Info --
     doc.setTextColor(0);
-    doc.setFontSize(14);
-    doc.text("Customer Details", 14, 50);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
 
+    const invoiceDate = new Date().toLocaleDateString();
+
+    doc.text(`Date: ${invoiceDate}`, 14, 50);
+    doc.text(`Payment ID: ${response.razorpay_payment_id}`, 14, 55);
+
+    // -- Customer Info --
     doc.setFontSize(12);
-    let y = 58;
-    doc.text(`Name: ${data.name}`, 14, y);
-    y += 8;
-    doc.text(`Email: ${data.email}`, 14, y);
-    y += 8;
-    doc.text(`Phone: ${data.phone}`, 14, y);
-    y += 8;
-    doc.text(
-      `Razorpay Payment ID: ${response.razorpay_payment_id || "N/A"}`,
-      14,
-      y
-    );
+    doc.setFont("helvetica", "bold");
+    doc.text("Billed To:", 14, 70);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.text(name, 14, 76);
+    doc.text(email, 14, 81);
+    doc.text(phone, 14, 86);
 
-    y += 16;
-    doc.setFontSize(14);
-    doc.text("Payment Summary", 14, y);
+    // -- Booking Details --
+    if (bookingDetails) {
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text("Trip Details:", 110, 70);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.text(`Route: ${bookingDetails.route}`, 110, 76);
+      doc.text(`Vehicle: ${bookingDetails.vehicle}`, 110, 81);
+      doc.text(`Date: ${bookingDetails.date} at ${bookingDetails.time}`, 110, 86);
+      doc.text(`Duration: ${bookingDetails.duration} Days`, 110, 91);
+    }
 
-    y += 8;
-    doc.setFontSize(12);
-    doc.text(`Base Amount: ₹${baseAmount.toFixed(2)}`, 14, y);
-    y += 8;
-    doc.text(`GST: ₹${gst.toFixed(2)}`, 14, y);
-    y += 8;
-    doc.text(`Discount: ₹${discount.toFixed(2)}`, 14, y);
-    y += 8;
-    doc.text(`Total Paid: ₹${total.toFixed(2)}`, 14, y);
-
-    y += 20;
-    doc.setFontSize(12);
-    doc.text("Thank you for booking with ConsistentCars!", 105, y, {
-      align: "center",
+    // -- Table --
+    autoTable(doc, {
+      startY: 105,
+      head: [["Description", "Details", "Amount"]],
+      body: [
+        [
+          `Vehicle Rental (${bookingDetails?.duration || 1} days)`,
+          `Rate: ${amount / (bookingDetails?.duration || 1)}/day`,
+          `Rs. ${amount.toFixed(2)}`
+        ],
+        ["Taxes & Fees", "Included", "Rs. 0.00"],
+      ],
+      foot: [["", "Total", `Rs. ${amount.toFixed(2)}`]],
+      headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold' },
+      footStyles: { fillColor: secondaryColor, textColor: 255, fontStyle: 'bold' },
+      theme: 'grid',
+      columnStyles: {
+        2: { halign: 'right' }
+      }
     });
 
-    doc.save("ConsistentCars_Invoice.pdf");
+    // -- Footer --
+    const finalY = doc.lastAutoTable.finalY + 30;
+    doc.setTextColor(100);
+    doc.setFontSize(10);
+    doc.text("Thank you for choosing Consistent Cars! Safe travels.", 105, finalY, { align: "center" });
+
+    doc.save("ConsistentCars_Receipt.pdf");
   };
 
   return (
-    <div className="bg-gray-100 py-6 px-4 rounded-lg">
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <div className="mb-4">
-          <label className="font-bold flex items-center text-black">
-            <FaUserAlt className="mr-2 text-black" />
-            Name
-          </label>
-          <input
-            type="text"
-            {...register("name", { required: "Name is required" })}
-            className="text-black border border-gray-300 px-4 py-2 rounded-lg w-full"
-            placeholder="Enter your name"
-          />
-          {errors.name && (
-            <p className="text-red-500 text-sm">{errors.name.message}</p>
-          )}
-        </div>
-
-        <div className="mb-4">
-          <label className="font-bold flex items-center text-black">
-            <FaEnvelope className="mr-2 text-black" />
-            Email
-          </label>
-          <input
-            type="email"
-            {...register("email", {
-              required: "Email is required",
-              pattern: {
-                value: /\S+@\S+\.\S+/,
-                message: "Invalid email",
-              },
-            })}
-            className="border text-black border-gray-300 px-4 py-2 rounded-lg w-full"
-            placeholder="Enter your email"
-          />
-          {errors.email && (
-            <p className="text-red-500 text-sm">{errors.email.message}</p>
-          )}
-        </div>
-
-        <div className="mb-4">
-          <label className="font-bold flex items-center text-black">
-            <FaPhoneAlt className="mr-2 text-black" />
-            Phone
-          </label>
-          <input
-            type="tel"
-            {...register("phone", { required: "Phone is required" })}
-            className="border border-gray-300 text-black px-4 py-2 rounded-lg w-full"
-            placeholder="Enter your phone number"
-          />
-          {errors.phone && (
-            <p className="text-red-500 text-sm">{errors.phone.message}</p>
-          )}
-        </div>
-
-        {/* Show Grand Total */}
-        <div className="mb-4">
-          <label className="font-bold flex items-center text-black">
-            <FaMoneyBillAlt className="mr-2 text-black" />
-            Grand Total
-          </label>
-          <input
-            type="text"
-            value={`₹ ${amount.toFixed(2)}`}
-            readOnly
-            className="bg-gray-200 border text-black border-gray-300 px-4 py-2 rounded-lg w-full cursor-not-allowed"
-          />
-        </div>
-
-        <button
-          type="submit"
-          className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 font-semibold"
-        >
-          Pay ₹ {amount.toFixed(2)}
-        </button>
-      </form>
-    </div>
+    <button
+      onClick={handlePayment}
+      type="button"
+      className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-cyan-900/20 transform transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
+    >
+      Confirm & Pay ₹{amount.toLocaleString()}
+    </button>
   );
 };
 
