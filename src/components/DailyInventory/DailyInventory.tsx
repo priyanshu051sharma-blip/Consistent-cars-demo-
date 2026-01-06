@@ -1,6 +1,15 @@
 // components/DailyInventory.tsx
 import React, { useMemo } from "react";
-import { Car } from "@/pages/admin-dashboard";
+
+interface Car {
+  id: string;
+  make: string;
+  model: string;
+  year: number;
+  license: string;
+  mileage: number;
+  status: string;
+}
 
 export default function DailyInventory({ cars }: { cars: Car[] }) {
   const totals = useMemo(() => {
@@ -99,15 +108,14 @@ export default function DailyInventory({ cars }: { cars: Car[] }) {
         {cars.map((c) => (
           <div
             key={c.id}
-            className={`p-3 rounded flex justify-between items-center ${
-              c.status === "Available"
+            className={`p-3 rounded flex justify-between items-center ${c.status === "Available"
                 ? "bg-[#06281f]"
                 : c.status === "Rented"
-                ? "bg-[#0b2236]"
-                : c.status === "Maintenance"
-                ? "bg-[#2b0b0b]"
-                : "bg-[#352a11]"
-            }`}
+                  ? "bg-[#0b2236]"
+                  : c.status === "Maintenance"
+                    ? "bg-[#2b0b0b]"
+                    : "bg-[#352a11]"
+              }`}
           >
             <div>
               <div className="font-semibold">

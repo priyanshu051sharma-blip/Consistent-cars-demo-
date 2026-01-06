@@ -194,11 +194,10 @@ export default function BaywatchResort() {
         {roomTypes.map((room) => (
           <div
             key={room.name}
-            className={`rounded-2xl p-6 shadow-xl border transition hover:shadow-2xl ${
-              selectedRoom.name === room.name
+            className={`rounded-2xl p-6 shadow-xl border transition hover:shadow-2xl ${selectedRoom.name === room.name
                 ? "border-[#00ffff]"
                 : "border-gray-700"
-            }`}
+              }`}
           >
             <ImageGallery images={room.images} />
             <h2 className="text-3xl font-bold mt-4 text-blue-300">
@@ -218,11 +217,10 @@ export default function BaywatchResort() {
             </h3>
 
             <button
-              className={`mt-4 py-2 px-4 rounded-lg font-semibold ${
-                selectedRoom.name === room.name
+              className={`mt-4 py-2 px-4 rounded-lg font-semibold ${selectedRoom.name === room.name
                   ? "bg-[#00ffff] text-black"
                   : "bg-gray-800 text-white hover:bg-gray-700"
-              }`}
+                }`}
               onClick={() => setSelectedRoom(room)}
             >
               {selectedRoom.name === room.name ? "Selected" : "Choose Room"}
@@ -263,7 +261,50 @@ export default function BaywatchResort() {
             <h3 className="text-2xl font-bold mb-4 text-blue-600 text-center">
               <Calendar size={20} className="inline mr-2" /> Booking Form
             </h3>
-            <Pay amount={grandTotal} />
+
+            <div className="space-y-4 mb-6">
+              <input
+                placeholder="Full Name"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                value={userData.name}
+                onChange={(e) => setUserData({ ...userData, name: e.target.value })}
+              />
+              <input
+                placeholder="Email Address"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                value={userData.email}
+                onChange={(e) => setUserData({ ...userData, email: e.target.value })}
+              />
+              <input
+                placeholder="Phone Number"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                value={userData.phone}
+                onChange={(e) => setUserData({ ...userData, phone: e.target.value })}
+              />
+              <div>
+                <label className="text-sm font-semibold text-gray-600 block mb-1">Check-in Date</label>
+                <input
+                  type="date"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <Pay
+              amount={grandTotal}
+              name={userData.name}
+              email={userData.email}
+              phone={userData.phone}
+              bookingDetails={{
+                vehicle: 'Hotel Stay',
+                route: `Baywatch Resort - ${selectedRoom.name}`,
+                date: startDate,
+                time: '13:00',
+                duration: nights
+              }}
+            />
           </div>
         </div>
       </div>

@@ -1,15 +1,7 @@
 import 'dotenv/config'
 import { PrismaClient } from '@prisma/client'
-import { PrismaBetterSqlite } from '@prisma/adapter-better-sqlite3'
-import Database from 'better-sqlite3'
-import path from 'path';
 
-const dbPath = path.resolve('dev.db');
-console.log("Seeding using database file:", dbPath);
-
-const sqlite = new Database(dbPath);
-const adapter = new PrismaBetterSqlite(sqlite);
-const prisma = new PrismaClient({ adapter });
+const prisma = new PrismaClient();
 
 async function main() {
     console.log('Start seeding ...')

@@ -1,7 +1,27 @@
 // components/BillCreator.tsx
 import React, { useState } from "react";
-import { Car, Invoice } from "@/pages/admin-dashboard";
 import { v4 as uuidv4 } from "uuid";
+
+interface Car {
+  id: string;
+  make: string;
+  model: string;
+  license: string;
+  status: string;
+}
+
+interface Invoice {
+  id: string;
+  customerName: string;
+  carId: string | null;
+  items: { id: string; description: string; amount: number }[];
+  subtotal: number;
+  tax: number;
+  total: number;
+  createdAt: string;
+  paid: boolean;
+  deposit: number;
+}
 
 function money(n: number) {
   return Math.round(n * 100) / 100;
@@ -82,8 +102,7 @@ export default function BillCreator({
     const w = window.open("", "_blank");
     if (!w) return;
     w.document.write(
-      `<html><head><title>Invoice ${
-        inv.id
+      `<html><head><title>Invoice ${inv.id
       }</title></head><body><pre>${JSON.stringify(
         inv,
         null,

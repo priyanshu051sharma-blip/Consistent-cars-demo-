@@ -17,8 +17,9 @@ const Airport = () => {
   const [time, setTime] = useState("");
   const [showPay, setShowPay] = useState(false);
 
-  // Toll tax for Mumbai
-  //   const tollTax = 300;
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
 
   // Price calculation
   const getPrice = () => {
@@ -63,11 +64,10 @@ const Airport = () => {
                   key={i}
                   whileHover={{ scale: 1.05 }}
                   onClick={() => setCar(c.name)}
-                  className={`cursor-pointer border-2 rounded-2xl overflow-hidden shadow-md transition-all ${
-                    car === c.name
-                      ? "border-blue-600 shadow-lg"
-                      : "border-gray-300"
-                  }`}
+                  className={`cursor-pointer border-2 rounded-2xl overflow-hidden shadow-md transition-all ${car === c.name
+                    ? "border-blue-600 shadow-lg"
+                    : "border-gray-300"
+                    }`}
                 >
                   <img
                     src={c.image}
@@ -76,9 +76,8 @@ const Airport = () => {
                   />
                   <div className="p-4 text-center bg-gray-50">
                     <p
-                      className={`font-semibold text-lg ${
-                        car === c.name ? "text-blue-600" : "text-gray-800"
-                      }`}
+                      className={`font-semibold text-lg ${car === c.name ? "text-blue-600" : "text-gray-800"
+                        }`}
                     >
                       {c.name}
                     </p>
@@ -109,57 +108,81 @@ const Airport = () => {
             </div>
           )}
 
-          {/* Date & Time */}
+          {/* Dates & Contact */}
           {airport && (
-            <>
+            <div className="space-y-4">
               <div>
-                <label className="block text-gray-700 mb-2 font-semibold">
-                  <Calendar size={16} className="inline-block mr-2" /> Date
-                </label>
-                <input
-                  type="date"
-                  className="border w-full px-4 py-2 rounded-lg text-black"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                />
+                <label className="block text-gray-700 mb-2 font-semibold">Contact Details:</label>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <input placeholder="Name" className="border w-full px-4 py-2 rounded-lg text-black" value={name} onChange={e => setName(e.target.value)} />
+                  <input placeholder="Email" className="border w-full px-4 py-2 rounded-lg text-black" value={email} onChange={e => setEmail(e.target.value)} />
+                  <input placeholder="Phone" className="border w-full px-4 py-2 rounded-lg text-black" value={phone} onChange={e => setPhone(e.target.value)} />
+                </div>
               </div>
 
-              <div>
-                <label className="block text-gray-700 mb-2 font-semibold">
-                  <Clock size={16} className="inline-block mr-2" /> Time
-                </label>
-                <input
-                  type="time"
-                  className="border w-full px-4 py-2 rounded-lg text-black"
-                  value={time}
-                  onChange={(e) => setTime(e.target.value)}
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-gray-700 mb-2 font-semibold">
+                    <Calendar size={16} className="inline-block mr-2" /> Date
+                  </label>
+                  <input
+                    type="date"
+                    className="border w-full px-4 py-2 rounded-lg text-black"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-gray-700 mb-2 font-semibold">
+                    <Clock size={16} className="inline-block mr-2" /> Time
+                  </label>
+                  <input
+                    type="time"
+                    className="border w-full px-4 py-2 rounded-lg text-black"
+                    value={time}
+                    onChange={(e) => setTime(e.target.value)}
+                  />
+                </div>
               </div>
 
               {/* Price Preview */}
-              <div className="text-xl font-bold text-green-600">
+              <div className="text-xl font-bold text-green-600 mt-4">
                 Total: ₹ {grandTotal}
                 {airport === "Mumbai Airport" && (
                   <p className="text-sm text-gray-600">(Additional Toll Tax)</p>
                 )}
               </div>
-            </>
+            </div>
           )}
 
           {/* Proceed Button */}
           {airport && (
             <button
               onClick={() => setShowPay(true)}
-              className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700"
-              disabled={!date || !time}
+              className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700 disabled:opacity-50"
+              disabled={!date || !time || !name || !email || !phone}
             >
-              Proceed
+              Proceed to Pay
             </button>
           )}
         </div>
       ) : (
         <div className="bg-white rounded-3xl shadow-2xl p-8 w-full md:w-1/2 mx-auto">
-          <Pay amount={grandTotal} />
+          <button onClick={() => setShowPay(false)} className="mb-4 text-blue-600 underline">Back</button>
+          <Pay
+            amount={grandTotal}
+            name={name}
+            email={email}
+            phone={phone}
+            bookingDetails={{
+              vehicle: car,
+              route: `Drop to ${airport}`,
+              date: date,
+              time: time,
+              duration: 1
+            }}
+          />
         </div>
       )}
     </div>
