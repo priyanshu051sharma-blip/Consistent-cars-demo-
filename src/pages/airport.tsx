@@ -3,15 +3,25 @@ import { motion } from "framer-motion";
 import { Calendar, Clock } from "lucide-react";
 import Pay from "../components/Pay/Pay";
 
-const airports = ["Mumbai Airport", "Pune Airport"];
+const locations = ["Mumbai", "Pune", "Sindhudurg", "Goa", "Mahabaleshwar", "Ratnagiri", "Aurangabad"];
+const airports = [
+  "Mumbai Airport",
+  "Pune Airport",
+  "Sindhudurg Airport (Chipi)",
+  "Goa Airport (Dabolim)",
+  "Goa Airport (Mopa)",
+  "Aurangabad Airport",
+  "Ratnagiri Airport"
+];
 
 const cars = [
-  { name: "Toyota Innova", image: "/image/innova.png" },
-  { name: "Sedan", image: "/image/dzire.png" },
+  { name: "Toyota Innova Crysta", image: "/image/innova.png" },
+  { name: "Swift Dzire", image: "/image/dzire.png" },
 ];
 
 const Airport = () => {
   const [car, setCar] = useState("");
+  const [location, setLocation] = useState("");
   const [airport, setAirport] = useState("");
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
@@ -23,15 +33,16 @@ const Airport = () => {
 
   // Price calculation
   const getPrice = () => {
-    if (!car || !airport) return 0;
+    if (!car || !airport || !location) return 0;
 
-    if (airport === "Pune Airport") {
-      return car === "Toyota Innova" ? 1500 : 1000;
-    }
-    if (airport === "Mumbai Airport") {
-      return car === "Toyota Innova" ? 5500 : 3500;
-    }
-    return 0;
+    let basePrice = 1000;
+    if (car === "Toyota Innova Crysta") basePrice += 500;
+
+    // Simple dynamic pricing simulation
+    if (location === "Mumbai" || location === "Aurangabad" || location === "Ratnagiri") basePrice += 1500;
+    if (airport.includes("Mumbai") || airport.includes("Goa")) basePrice += 1000;
+
+    return basePrice;
   };
 
   const grandTotal = getPrice();
@@ -47,7 +58,7 @@ const Airport = () => {
           Airport Drop Booking
         </h2>
         <p className="text-lg text-gray-400">
-          Choose your car, airport, and schedule.
+          Choose your car, pickup location, airport, and schedule.
         </p>
       </motion.div>
 
@@ -87,18 +98,39 @@ const Airport = () => {
             </div>
           </div>
 
-          {/* Airport Selection */}
+          {/* Location Selection */}
           {car && (
             <div>
               <label className="block text-gray-700 mb-2 font-semibold">
-                Select Airport:
+                Select Pickup City/Region:
+              </label>
+              <select
+                className="border w-full px-4 py-2 rounded-lg text-black"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+              >
+                <option value="">Choose Location...</option>
+                {locations.map((loc, i) => (
+                  <option key={i} value={loc}>
+                    {loc}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Airport Selection */}
+          {location && (
+            <div>
+              <label className="block text-gray-700 mb-2 font-semibold">
+                Select Drop Airport:
               </label>
               <select
                 className="border w-full px-4 py-2 rounded-lg text-black"
                 value={airport}
                 onChange={(e) => setAirport(e.target.value)}
               >
-                <option value="">Choose...</option>
+                <option value="">Choose Airport...</option>
                 {airports.map((a, i) => (
                   <option key={i} value={a}>
                     {a}
@@ -108,8 +140,43 @@ const Airport = () => {
             </div>
           )}
 
+
+
+          {/* Rate Table - Visible when choices are made */}
+          {airport && location && (
+            <div className="bg-gray-50 p-6 rounded-2xl border border-gray-200">
+              <h4 className="text-lg font-bold text-gray-800 mb-4">Rate Breakdown</h4>
+              <div className="space-y-3">
+                <div className="flex justify-between text-gray-600">
+                  <span>Base Fare ({car})</span>
+                  <span>₹{car === "Toyota Innova Crysta" ? 1500 : 1000}</span>
+                </div>
+                {(location === "Mumbai" || location === "Aurangabad" || location === "Ratnagiri") && (
+                  <div className="flex justify-between text-gray-600">
+                    <span>Location Surcharge ({location})</span>
+                    <span>₹1500</span>
+                  </div>
+                )}
+                {(airport.includes("Mumbai") || airport.includes("Goa")) && (
+                  <div className="flex justify-between text-gray-600">
+                    <span>Airport Surcharge ({airport.split(' ')[0]})</span>
+                    <span>₹1000</span>
+                  </div>
+                )}
+                <div className="h-px bg-gray-300 my-2" />
+                <div className="flex justify-between text-xl font-bold text-green-600">
+                  <span>Total Estimate</span>
+                  <span>₹{grandTotal.toLocaleString()}</span>
+                </div>
+              </div>
+              {airport.includes("Mumbai") && (
+                <p className="text-xs text-gray-500 mt-2 italic">* Includes Toll Taxes for Mumbai entry</p>
+              )}
+            </div>
+          )}
+
           {/* Dates & Contact */}
-          {airport && (
+          {airport && location && (
             <div className="space-y-4">
               <div>
                 <label className="block text-gray-700 mb-2 font-semibold">Contact Details:</label>
@@ -145,19 +212,11 @@ const Airport = () => {
                   />
                 </div>
               </div>
-
-              {/* Price Preview */}
-              <div className="text-xl font-bold text-green-600 mt-4">
-                Total: ₹ {grandTotal}
-                {airport === "Mumbai Airport" && (
-                  <p className="text-sm text-gray-600">(Additional Toll Tax)</p>
-                )}
-              </div>
             </div>
           )}
 
           {/* Proceed Button */}
-          {airport && (
+          {airport && location && (
             <button
               onClick={() => setShowPay(true)}
               className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700 disabled:opacity-50"
@@ -177,15 +236,16 @@ const Airport = () => {
             phone={phone}
             bookingDetails={{
               vehicle: car,
-              route: `Drop to ${airport}`,
+              route: `Pickup: ${location} -> Drop: ${airport}`,
               date: date,
               time: time,
               duration: 1
             }}
           />
         </div>
-      )}
-    </div>
+      )
+      }
+    </div >
   );
 };
 

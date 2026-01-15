@@ -17,7 +17,7 @@ const HotelDetails: React.FC<HotelDetailsProps> = ({ hotel }) => {
     const [lightboxOpen, setLightboxOpen] = useState(false);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [showPayment, setShowPayment] = useState(false);
-    const [guestDetails, setGuestDetails] = useState({ name: "", email: "", phone: "" });
+    const [guestDetails, setGuestDetails] = useState({ name: "", email: "", phone: "", checkIn: "", checkOut: "" });
 
     if (router.isFallback) {
         return <div className="text-white text-center py-20">Loading...</div>;
@@ -218,62 +218,96 @@ const HotelDetails: React.FC<HotelDetailsProps> = ({ hotel }) => {
                                     <button onClick={() => setShowPayment(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white"><X size={20} /></button>
                                     <h3 className="text-xl font-bold text-white mb-4">Guest & Payment Details</h3>
 
-                                    <div className="bg-slate-800 p-4 rounded-xl border border-white/5 mb-6 space-y-2">
-                                        <div className="flex justify-between text-slate-400">
-                                            <span>Base Rate (1 Night)</span>
-                                            <span>₹{hotel.pricePerNight.toLocaleString()}</span>
-                                        </div>
-                                        <div className="flex justify-between text-slate-400">
-                                            <span>GST (12%)</span>
-                                            <span>₹{(hotel.pricePerNight * 0.12).toLocaleString()}</span>
-                                        </div>
-                                        <div className="h-px bg-white/10 my-2" />
-                                        <div className="flex justify-between text-xl font-bold text-white">
-                                            <span>Total Payable</span>
-                                            <span>₹{(hotel.pricePerNight * 1.12).toLocaleString()}</span>
-                                        </div>
-                                    </div>
-
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                                        <input
-                                            type="text"
-                                            placeholder="Full Name"
-                                            value={guestDetails.name}
-                                            onChange={(e) => setGuestDetails({ ...guestDetails, name: e.target.value })}
-                                            className="bg-slate-900/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-cyan-500 outline-none"
-                                        />
-                                        <input
-                                            type="email"
-                                            placeholder="Email"
-                                            value={guestDetails.email}
-                                            onChange={(e) => setGuestDetails({ ...guestDetails, email: e.target.value })}
-                                            className="bg-slate-900/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-cyan-500 outline-none"
-                                        />
-                                        <input
-                                            type="tel"
-                                            placeholder="Phone"
-                                            value={guestDetails.phone}
-                                            onChange={(e) => setGuestDetails({ ...guestDetails, phone: e.target.value })}
-                                            className="bg-slate-900/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-cyan-500 outline-none"
-                                        />
+                                        <div>
+                                            <label className="block text-slate-400 text-sm mb-1">Check-in</label>
+                                            <input type="date" className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-cyan-500 outline-none"
+                                                onChange={(e) => {
+                                                    const newDate = e.target.value;
+                                                    setGuestDetails(prev => ({ ...prev, checkIn: newDate }));
+                                                }}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-slate-400 text-sm mb-1">Check-out</label>
+                                            <input type="date" className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-cyan-500 outline-none"
+                                                onChange={(e) => {
+                                                    const newDate = e.target.value;
+                                                    setGuestDetails(prev => ({ ...prev, checkOut: newDate }));
+                                                }}
+                                            />
+                                        </div>
                                     </div>
 
-                                    <Pay
-                                        amount={hotel.pricePerNight * 1.12}
-                                        name={guestDetails.name}
-                                        email={guestDetails.email}
-                                        phone={guestDetails.phone}
-                                        bookingDetails={{
-                                            vehicle: "Hotel Stay",
-                                            route: hotel.name,
-                                            date: new Date().toLocaleDateString(),
-                                            time: "Check-in 12:00 PM",
-                                            duration: 1,
-                                            basePrice: hotel.pricePerNight,
-                                            gstAmount: hotel.pricePerNight * 0.12,
-                                            totalAmount: hotel.pricePerNight * 1.12
-                                        }}
-                                    />
+                                    {(() => {
+                                        const start = guestDetails.checkIn ? new Date(guestDetails.checkIn) : null;
+                                        const end = guestDetails.checkOut ? new Date(guestDetails.checkOut) : null;
+                                        const nights = (start && end && end > start) ? Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) : 1;
+                                        const totalBase = hotel.pricePerNight * nights;
+                                        const gst = totalBase * 0.12;
+                                        const totalPayable = totalBase + gst;
+
+                                        return (
+                                            <>
+                                                <div className="bg-slate-800 p-4 rounded-xl border border-white/5 mb-6 space-y-2">
+                                                    <div className="flex justify-between text-slate-400">
+                                                        <span>Rate ({nights} Night{nights > 1 ? 's' : ''})</span>
+                                                        <span>₹{totalBase.toLocaleString()}</span>
+                                                    </div>
+                                                    <div className="flex justify-between text-slate-400">
+                                                        <span>GST (12%)</span>
+                                                        <span>₹{gst.toLocaleString()}</span>
+                                                    </div>
+                                                    <div className="h-px bg-white/10 my-2" />
+                                                    <div className="flex justify-between text-xl font-bold text-white">
+                                                        <span>Total Payable</span>
+                                                        <span>₹{totalPayable.toLocaleString()}</span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Full Name"
+                                                        value={guestDetails.name}
+                                                        onChange={(e) => setGuestDetails({ ...guestDetails, name: e.target.value })}
+                                                        className="bg-slate-900/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-cyan-500 outline-none"
+                                                    />
+                                                    <input
+                                                        type="email"
+                                                        placeholder="Email"
+                                                        value={guestDetails.email}
+                                                        onChange={(e) => setGuestDetails({ ...guestDetails, email: e.target.value })}
+                                                        className="bg-slate-900/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-cyan-500 outline-none"
+                                                    />
+                                                    <input
+                                                        type="tel"
+                                                        placeholder="Phone"
+                                                        value={guestDetails.phone}
+                                                        onChange={(e) => setGuestDetails({ ...guestDetails, phone: e.target.value })}
+                                                        className="bg-slate-900/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-cyan-500 outline-none"
+                                                    />
+                                                </div>
+
+                                                <Pay
+                                                    amount={totalPayable}
+                                                    name={guestDetails.name}
+                                                    email={guestDetails.email}
+                                                    phone={guestDetails.phone}
+                                                    bookingDetails={{
+                                                        vehicle: "Hotel Stay",
+                                                        route: hotel.name,
+                                                        date: guestDetails.checkIn || new Date().toLocaleDateString(),
+                                                        time: "Check-in 12:00 PM",
+                                                        duration: nights,
+                                                        basePrice: totalBase,
+                                                        gstAmount: gst,
+                                                        totalAmount: totalPayable
+                                                    }}
+                                                />
+                                            </>
+                                        );
+                                    })()}
                                 </div>
                             </motion.div>
                         )}
@@ -292,7 +326,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
             where: {
                 OR: [
                     { id: id as string },
-                    { name: { contains: (id as string).replace("-", " ") } }
+                    { name: { contains: (id as string).replace(/-/g, " "), mode: 'insensitive' } as any }
                 ]
             }
         });

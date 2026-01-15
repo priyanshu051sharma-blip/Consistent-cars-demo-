@@ -74,8 +74,10 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
     // ideally redirect to services, but let's handle graceful fallback text
 
     const calculateTotal = (car: Car, hours: number) => {
-        if (hours <= 1) return car.baseDayPrice;
-        return car.baseDayPrice + (hours - 1) * car.baseDayPrice;
+        // Assuming baseDayPrice is for a standard ~10 hour day or similar. 
+        // Let's approximate Hourly Rate = baseDayPrice / 10 for simplicity/profitability
+        const hourlyRate = Math.ceil(car.baseDayPrice / 10);
+        return hourlyRate * hours;
     };
     const grandTotal = selectedCar ? calculateTotal(selectedCar, hours) : 0;
     const isFormValid = contactDetails.name && contactDetails.email && contactDetails.phone && date && time;
@@ -83,7 +85,6 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
     const generatePDF = () => {
         if (!selectedCar || !selectedLocation || !isFormValid) return;
         const doc = new jsPDF();
-        const days = Math.ceil(hours / 24) || 1;
 
         doc.setFillColor(6, 182, 212);
         doc.rect(0, 0, 210, 40, "F");
@@ -109,7 +110,7 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
                 ["Trip Route", `${selectedLocation.name} Trip`],
                 ["Vehicle", selectedCar.name],
                 ["Date & Time", `${date} at ${time}`],
-                ["Duration", `${days} Day(s)`],
+                ["Duration", `${hours} Hours`],
             ],
             styles: { fontSize: 11, cellPadding: 6 },
             headStyles: { fillColor: [6, 182, 212], fontStyle: 'bold' },
@@ -123,7 +124,7 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
             startY: finalY + 5,
             head: [["Description", "Amount"]],
             body: [
-                [`Vehicle Rental (${days} days)`, `Rs. ${grandTotal.toFixed(2)}`],
+                [`Vehicle Rental (${hours} hours)`, `Rs. ${grandTotal.toFixed(2)}`],
                 ["Taxes & Fees", "Rs. 0.00"],
                 ["Total Amount Paid", `Rs. ${grandTotal.toFixed(2)}`],
             ],
@@ -274,7 +275,7 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
                                             <input type="date" onChange={(e) => setDate(e.target.value)} min={new Date().toISOString().split("T")[0]} className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-cyan-500 outline-none" />
                                             <input type="time" onChange={(e) => setTime(e.target.value)} className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-cyan-500 outline-none" />
                                         </div>
-                                        <input type="number" min="1" value={hours} onChange={(e) => setHours(Math.max(1, parseInt(e.target.value) || 1))} className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-cyan-500 outline-none" placeholder="Duration (Days)" />
+                                        <input type="number" min="1" value={hours} onChange={(e) => setHours(Math.max(1, parseInt(e.target.value) || 1))} className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-cyan-500 outline-none" placeholder="Duration (Hours)" />
                                         <div className="border-t border-white/10 my-2" />
                                         <input type="text" placeholder="Full Name" onChange={(e) => setContactDetails({ ...contactDetails, name: e.target.value })} className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-cyan-500 outline-none" />
                                         <input type="email" placeholder="Email" onChange={(e) => setContactDetails({ ...contactDetails, email: e.target.value })} className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-cyan-500 outline-none" />
@@ -289,7 +290,7 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
                                         <p className="text-4xl font-bold mb-6">₹{grandTotal.toLocaleString()}</p>
 
                                         <div className="space-y-2 text-sm text-cyan-100 mb-6">
-                                            <div className="flex justify-between"><span>Duration</span><span>{hours} Days</span></div>
+                                            <div className="flex justify-between"><span>Duration</span><span>{hours} Hours</span></div>
                                             <div className="flex justify-between border-t border-white/20 pt-2 font-bold text-white"><span>Total</span><span>₹{grandTotal}</span></div>
                                         </div>
 

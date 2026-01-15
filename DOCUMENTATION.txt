@@ -1,0 +1,112 @@
+CONSISTENT CARS - DOCUMENTATION
+========================================
+
+1. PROJECT OVERVIEW
+----------------------------------------
+Consistent Cars is a comprehensive web application for managing car rentals and hotel bookings. It serves two primary user bases:
+1. Customers: Can browse cars and hotels, make bookings, and pay online.
+2. Admins: Can manage the fleet (cars), partner hotels, view bookings, and track financial performance.
+
+Technology Stack:
+* Frontend: Next.js 16 (React 19), Tailwind CSS, Framer Motion.
+* Backend: Next.js API Routes.
+* Database: SQLite (via Prisma ORM).
+* Payment: Razorpay integration.
+* Tools: jsPDF (Invoice generation), Lucide React (Icons).
+
+
+2. USER MANUAL
+----------------------------------------
+
+2.1 CUSTOMER FEATURES
+
+[Browsing & Booking]
+* Services Page: Users can browse available cars and hotels.
+    * Cars: Filter by type (SUV, Sedan, etc.), view seats and features.
+    * Hotels: View amenities, location, and price per night.
+* Booking Process:
+    1. Selection: Choose a car or hotel.
+    2. Details: Enter trip dates, duration, and personal details (Name, Email, Phone).
+    3. Review: See estimated cost breakdown.
+    4. Payment: Integrated Razorpay payment gateway.
+    5. Confirmation: Instant booking status update.
+
+[AIChatbot (Consistent AI)]
+* A "Consistent Assistant" chatbot is available on the booking pages.
+* Features:
+    * Answers questions about prices, booking procedures, and contact info.
+    * Smart suggestions for hotels and cars based on user queries (e.g., "Show me luxury resorts").
+    * Falls back to contact support if the query is unrelated.
+
+[Invoicing]
+* After booking, users can receive an auto-generated PDF invoice detailing their trip/stay and payment breakdown.
+
+2.2 ADMIN FEATURES
+
+Login Access: Admins access the dashboard via `/admin-login`. Functional security checks prevent unauthorized access.
+
+[Dashboard (/admin-dashboard)]
+The central hub for all administrative tasks.
+* Live Stats:
+    * Total Revenue (Real-time calculation from bookings).
+    * Total Bookings count.
+    * Active Fleet size.
+    * Partner Hotels count.
+* Financial Hub:
+    * Gross Revenue: Total money flow.
+    * GST Calculation: Automated 12% GST estimation on Hotel bookings.
+    * Net Revenue: Revenue after tax deduction.
+    * Visuals: Progress bars showing revenue distribution.
+
+[Management Modules]
+* Car Manager:
+    * View all cars in the fleet.
+    * Add new cars (Name, Type, Price, Image, Features).
+    * Delete old/sold cars.
+* Hotel Manager:
+    * View partner hotels.
+    * Add new hotels (Location, Price, Rating, Amenities).
+    * Remove partnerships.
+* Booking Management:
+    * Table View: Searchable and filterable list of all bookings.
+    * Status Control: Update booking status (Paid -> Completed -> Cancelled).
+    * Invoice Generation: Admin can regenerate and download official PDF invoices for any past booking.
+
+
+3. DATA ARCHITECTURE (SCHEMA)
+----------------------------------------
+The application uses a relational database managed by Prisma.
+
+* Location: Represents a destination (e.g., Pune, Goa).
+    * Fields: id, name, image, description.
+* Hotel: A property within a Location.
+    * Fields: id, name, pricePerNight, rating, amenities, locationId.
+* Car: A vehicle in the fleet.
+    * Fields: id, name, type, seats, baseDayPrice, features.
+* Booking: The central record of a transaction.
+    * Fields: id, customerName, email, phone, type ("Hotel"/"Transport"), details (JSON), amount, status, createdAt.
+
+
+4. EXTENSIONS & SCALABILITY
+----------------------------------------
+
+4.1 IMPLEMENTED EXTENSIONS
+* Smart Chatbot: Integrated logical bot that queries the database to provide real-time suggestions to users.
+* PDF Engine: Client-side PDF generation for instant receipts, reducing server load.
+
+4.2 WORK PLAN & FUTURE WORKS
+
+[Phase 1: Admin Power Tools (Next Priority)]
+* BillCreator Module: A dedicated interface for creating custom bills (fines, extra services) exists in the codebase (`src/components/BillCreator`) but needs to be fully integrated into the dashboard.
+* Staff Management: Add roles for "Drivers" and "Managers" to track performance.
+
+[Phase 2: Technical Scalability]
+* AI Upgrade: Replace simple keyword matching in Chatbot with `openai` API (dependency already installed) for natural language understanding.
+* Mobile App: leverage the React Native ecosystem to port the current booking flow to iOS/Android.
+* Browser Extension: A "Quick Book" Chrome extension to check availability without opening the site.
+
+
+-car images
+-airport locations
+-airport, local rate table
+-content changes
