@@ -12,9 +12,9 @@ const Pay = ({ amount, name, email, phone, bookingDetails }) => {
     document.body.appendChild(script);
   }, []);
 
-  const handlePayment = () => {
-    if (typeof window === "undefined" || !window.Razorpay) {
-      alert("Razorpay SDK failed to load. Please refresh the page.");
+  const handlePayment = async () => {
+    if (typeof window === "undefined") {
+      alert("Please use a modern browser to process payments.");
       return;
     }
 
@@ -23,54 +23,75 @@ const Pay = ({ amount, name, email, phone, bookingDetails }) => {
       return;
     }
 
-    const options = {
-      key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-      amount: Math.round(amount * 100),
-      currency: "INR",
-      name: "Consistent Cars",
-      description: `Booking: ${bookingDetails?.vehicle || 'Vehicle'}`,
-      image: "/image/logo.png",
-      handler: async function (response) {
-        // Payment Success
-        console.log("Razorpay Response:", response);
+    try {
+      // Load Razorpay script if not already loaded
+      if (!window.Razorpay) {
+        const script = document.createElement("script");
+        script.src = "https://checkout.razorpay.com/v1/checkout.js";
+        script.async = true;
+        document.head.appendChild(script);
+        
+        // Wait for script to load
+        await new Promise((resolve) => {
+          script.onload = resolve;
+        });
+      }
 
-        try {
-          await fetch('/api/bookings', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              name,
-              email,
-              phone,
-              type: bookingDetails?.vehicle === "Hotel Stay" ? "Hotel" : "Transport",
-              details: bookingDetails,
-              amount: amount
-            })
-          });
-        } catch (error) {
-          console.error("Failed to save booking:", error);
-        }
+      // Razorpay options
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_1DP5ibkQQR9sj2",
+        amount: Math.round(amount * 100), // amount in paise
+        currency: "INR",
+        name: "Consistent Cars",
+        description: `Booking: ${bookingDetails?.vehicle || 'Vehicle'}`,
+        image: "/image/logo.png",
+        handler: async function (response) {
+          // Payment Success
+          console.log("Razorpay Response:", response);
 
-        generatePDF(response);
-        alert("Payment Successful! Invoice downloaded.");
-      },
-      prefill: {
-        name: name,
-        email: email,
-        contact: phone,
-      },
-      theme: {
-        color: "#0891b2", // Cyan-600 to match theme
-      },
-    };
+          try {
+            await fetch('/api/bookings', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                name,
+                email,
+                phone,
+                type: bookingDetails?.vehicle === "Hotel Stay" ? "Hotel" : "Transport",
+                details: bookingDetails,
+                amount: amount,
+                paymentId: response.razorpay_payment_id
+              })
+            });
+          } catch (error) {
+            console.error("Failed to save booking:", error);
+          }
 
-    const rzp = new window.Razorpay(options);
-    rzp.on("payment.failed", function (response) {
-      alert("Payment failed. Please try again.");
-      console.error(response.error);
-    });
+          generatePDF(response);
+          alert("Payment Successful! Invoice downloaded.");
+        },
+        prefill: {
+          name: name,
+          email: email,
+          contact: phone,
+        },
+        theme: {
+          color: "#0891b2", // Cyan-600
+        },
+      };
 
-    rzp.open();
+      // Open Razorpay modal
+      const rzp = new window.Razorpay(options);
+      rzp.on("payment.failed", function (response) {
+        alert("Payment failed. Please try again.");
+        console.error(response.error);
+      });
+
+      rzp.open();
+    } catch (error) {
+      alert(`Error: ${error.message}`);
+      console.error("Payment error:", error);
+    }
   };
 
   const generatePDF = (response) => {
@@ -131,13 +152,13 @@ const Pay = ({ amount, name, email, phone, bookingDetails }) => {
       head: [["Description", "Details", "Amount"]],
       body: [
         [
-          `Vehicle Rental (${bookingDetails?.duration || 1} days)`,
-          `Rate: ${amount / (bookingDetails?.duration || 1)}/day`,
-          `Rs. ${amount.toFixed(2)}`
+          `Vehicle Rental (${bookingDetails?.duration || 1} hours)`,
+          `Daily Rate: ₹${(amount / Math.ceil((bookingDetails?.duration || 1) / 24)).toFixed(0)}/day`,
+          `₹${amount.toFixed(0)}`
         ],
-        ["Taxes & Fees", "Included", "Rs. 0.00"],
+        ["Taxes & Fees", "Included", "₹0.00"],
       ],
-      foot: [["", "Total", `Rs. ${amount.toFixed(2)}`]],
+      foot: [["", "Total", `₹${amount.toFixed(0)}`]],
       headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold' },
       footStyles: { fillColor: secondaryColor, textColor: 255, fontStyle: 'bold' },
       theme: 'grid',

@@ -199,18 +199,15 @@ export default function HotelBooking({ locations }: HotelBookingProps) {
 export const getServerSideProps: GetServerSideProps = async () => {
   try {
     const locations = await prisma.location.findMany({
-      where: {
-        name: {
-          contains: 'Sindhudurg'
-        }
-      },
       include: {
         hotels: true
       }
     });
+    // Filter to show only Sindhudurg
+    const filteredLocations = locations.filter(loc => loc.name.toLowerCase() === 'sindhudurg');
     return {
       props: {
-        locations: JSON.parse(JSON.stringify(locations)),
+        locations: JSON.parse(JSON.stringify(filteredLocations)),
       },
     };
   } catch (error) {

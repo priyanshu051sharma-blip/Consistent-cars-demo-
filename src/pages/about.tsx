@@ -47,10 +47,13 @@ const About: React.FC = () => {
             <h2 className="text-3xl font-bold text-white border-l-4 border-cyan-500 pl-4">Our Journey</h2>
             <div className="text-slate-300 space-y-4 leading-relaxed text-lg">
               <p>
-                Consistent Cars (CC) began as a humble vision by Mr. Himanshu Mandke, a management graduate with deep roots in the travel industry. Starting with just a single car, the mission was simple but ambitious: to provide a travel experience that puts the customer first.
+                Consistent Cars (CC) was started in Pune in 2006 by Himaunshu Mandke, a professional from Travel industry. He had the experience of working in major companies like Cox&amp;Kings, Orix and Travel House. After gaining experience for about ten years, he started CC with one cab and one corporate customer.
               </p>
               <p>
-                Over 18 years, that single car blossomed into a premier fleet. We didn't just grow in numbers; we grew in trust. Today, we are proud to be one of Pune's leading car rental agencies, serving corporate clients, tourists, and families with the same sincerity we started with.
+                Over a period of 20 years, CC has served many corporate customers and has established a reputation for a safe and reliable auto rental company in Pune market. The Company has now expanded its service to individual customers and extended its market to Delhi.
+              </p>
+              <p>
+                Pune and Delhi are the two hubs where CC operates and serves the customers for local and out-station travel from these two Metro cities.
               </p>
             </div>
           </motion.div>

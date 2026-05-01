@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { CarFront, Calendar, Phone, ArrowRight, Star, ShieldCheck, MapPin } from "lucide-react";
+import { Calendar, Phone, ArrowRight, Star, ShieldCheck, MapPin } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import WhyChooseUs from "@/components/Why Choose Us/whychooseus"; // Assuming this component exists or will be updated independently
@@ -77,13 +77,8 @@ const Home: React.FC = () => {
             <p className="text-slate-400 text-lg">We prioritize your comfort and safety above all else.</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {[
-              {
-                icon: CarFront,
-                title: "Wide Range of Cars",
-                desc: "From economical hatchbacks to premium SUVs, pick the perfect ride specifically for your journey."
-              },
               {
                 icon: Calendar,
                 title: "Flexible Booking",
@@ -91,7 +86,7 @@ const Home: React.FC = () => {
               },
               {
                 icon: ShieldCheck,
-                title: "24/7 Reliability",
+                title: "Reliable",
                 desc: "Round-the-clock support and roadside assistance ensuring you never face a problem alone."
               }
             ].map((feature, idx) => (

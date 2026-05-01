@@ -8,7 +8,6 @@ import {
   FaLock,
   FaClock,
   FaBolt,
-  FaCheckCircle,
 } from "react-icons/fa";
 
 const features = [
@@ -41,11 +40,6 @@ const features = [
     icon: FaLock,
     title: "We Value Your Security",
     description: "Strong safety measures for every passenger.",
-  },
-  {
-    icon: FaCheckCircle,
-    title: "Drive your Way",
-    description: "Choose your vehicle type for a personalized experience.",
   },
   {
     icon: FaClock,

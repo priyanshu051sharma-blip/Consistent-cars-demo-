@@ -39,7 +39,22 @@ async function main() {
             description: 'The party capital of India, known for its nightlife, beaches, and Portuguese heritage.',
             hotels: {
                 create: [
-                    // Add dummy hotels for Goa if needed, or leave empty for now
+                    {
+                        name: 'Taj Hotel Goa',
+                        image: '/image/hotels/goa-taj.jpg',
+                        pricePerNight: 5500,
+                        rating: 4.7,
+                        description: 'Luxury beachfront property with world-class amenities and services.',
+                        amenities: 'WiFi,Pool,Spa,Beach Access,Restaurant',
+                    },
+                    {
+                        name: 'Marriott Goa',
+                        image: '/image/hotels/goa-marriott.jpg',
+                        pricePerNight: 4800,
+                        rating: 4.6,
+                        description: 'Contemporary design meets comfort in this premium beachside resort.',
+                        amenities: 'WiFi,Pool,Gym,AC,Room Service',
+                    }
                 ]
             }
         },
@@ -50,6 +65,26 @@ async function main() {
             name: 'Mahabaleshwar',
             image: '/image/mahabaleshwar.jpg',
             description: 'A serene hill station famous for its strawberries, waterfalls, and lush green forests.',
+            hotels: {
+                create: [
+                    {
+                        name: 'Strawberry Hill Resort',
+                        image: '/image/hotels/maha-strawberry.jpg',
+                        pricePerNight: 3500,
+                        rating: 4.4,
+                        description: 'Charming hill resort nestled among strawberry farms with scenic views.',
+                        amenities: 'WiFi,Garden,Fireplace,Hill View,Restaurant',
+                    },
+                    {
+                        name: 'Valley View Hotel',
+                        image: '/image/hotels/maha-valley.jpg',
+                        pricePerNight: 3200,
+                        rating: 4.3,
+                        description: 'Comfortable accommodation with panoramic valley views.',
+                        amenities: 'WiFi,Parking,AC,Garden,Conference Hall',
+                    }
+                ]
+            }
         },
     })
 
@@ -58,6 +93,26 @@ async function main() {
             name: 'Ratnagiri',
             image: '/image/ratnagiri.jpg',
             description: 'Famous for its Alphonso start mangoes, historic forts, and pristine coastline.',
+            hotels: {
+                create: [
+                    {
+                        name: 'Fort Heritage Hotel',
+                        image: '/image/hotels/ratn-heritage.jpg',
+                        pricePerNight: 3800,
+                        rating: 4.5,
+                        description: 'Historic property blending heritage with modern comfort near ancient forts.',
+                        amenities: 'WiFi,Heritage Tour,Restaurant,Beach Access',
+                    },
+                    {
+                        name: 'Alphonso Retreat',
+                        image: '/image/hotels/ratn-alphonso.jpg',
+                        pricePerNight: 3400,
+                        rating: 4.2,
+                        description: 'Cozy resort known for authentic local experiences and mango plantation tours.',
+                        amenities: 'WiFi,Plantation Tour,Organic Meals,Garden',
+                    }
+                ]
+            }
         },
     })
 
@@ -66,6 +121,26 @@ async function main() {
             name: 'Aurangabad',
             image: '/image/aurangabad.jpg',
             description: 'Tourism capital of Maharashtra, gateway to the Ajanta and Ellora Caves.',
+            hotels: {
+                create: [
+                    {
+                        name: 'Caves Gateway Hotel',
+                        image: '/image/hotels/aur-caves.jpg',
+                        pricePerNight: 4200,
+                        rating: 4.6,
+                        description: 'Premium hotel with organized cave tours and expert guides.',
+                        amenities: 'WiFi,Cave Tours,Restaurant,Parking',
+                    },
+                    {
+                        name: 'Ellora Palace Resort',
+                        image: '/image/hotels/aur-ellora.jpg',
+                        pricePerNight: 4000,
+                        rating: 4.4,
+                        description: 'Luxurious resort inspired by historical Ellora architecture.',
+                        amenities: 'WiFi,Pool,Spa,Guide Service,AC',
+                    }
+                ]
+            }
         },
     })
 
@@ -78,7 +153,7 @@ async function main() {
                 type: 'SUV',
                 seats: 7,
                 baseDayPrice: 3500,
-                image: '/image/innova.png',
+                image: '/image/crysta-white.jpg',
                 features: 'AC,Bluetooth,Reclining Seats,Airbags',
             },
             {

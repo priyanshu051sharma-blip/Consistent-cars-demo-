@@ -74,10 +74,9 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
     // ideally redirect to services, but let's handle graceful fallback text
 
     const calculateTotal = (car: Car, hours: number) => {
-        // Assuming baseDayPrice is for a standard ~10 hour day or similar. 
-        // Let's approximate Hourly Rate = baseDayPrice / 10 for simplicity/profitability
-        const hourlyRate = Math.ceil(car.baseDayPrice / 10);
-        return hourlyRate * hours;
+        // Calculate days from hours (minimum 1 day charge)
+        const days = Math.ceil(hours / 24);
+        return car.baseDayPrice * days;
     };
     const grandTotal = selectedCar ? calculateTotal(selectedCar, hours) : 0;
     const isFormValid = contactDetails.name && contactDetails.email && contactDetails.phone && date && time;
@@ -211,9 +210,9 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
                                         whileHover={{ scale: 1.02 }}
                                         className="bg-slate-800/50 backdrop-blur-sm border border-white/10 rounded-3xl overflow-hidden shadow-2xl flex flex-col"
                                     >
-                                        <div className="relative h-64 bg-slate-900/50 p-6 flex justify-center items-center">
+                                        <div className="relative h-80 bg-slate-900/50 p-6 flex justify-center items-center overflow-hidden">
                                             <div className="absolute w-[200px] h-[200px] bg-cyan-500/20 blur-[60px] rounded-full" />
-                                            <Image src={car.image} alt={car.name} width={400} height={250} className="object-contain relative z-10 drop-shadow-2xl" />
+                                            <Image src={car.image} alt={car.name} width={300} height={200} className="object-contain relative z-10 drop-shadow-2xl max-h-[220px] w-auto" />
                                             <div className="absolute top-4 right-4 bg-white/10 backdrop-blur-md px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider text-cyan-300 border border-white/10">
                                                 {car.type}
                                             </div>
@@ -325,7 +324,10 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
 
 export const getServerSideProps: GetServerSideProps = async () => {
     const locations = await prisma.location.findMany();
-    const cars = await prisma.car.findMany();
+    const allCars = await prisma.car.findMany();
+    
+    // Show only first 2 cars
+    const cars = allCars.slice(0, 2);
 
     return {
         props: {
