@@ -145,39 +145,69 @@ export default function BaywatchResort() {
     doc.save("baywatch_resort_invoice.pdf");
   };
 
-  const handlePayment = () => {
+  const handlePayment = async () => {
     if (!isFormValid) return;
 
-    const options = {
-      key: "YOUR_RAZORPAY_KEY_ID", // Replace with your Razorpay Key ID
-      amount: Math.round(grandTotal * 100), // in paise
-      currency: "INR",
-      name: "Baywatch Resort",
-      description: `Booking for ${selectedRoom.name}`,
-      image: "/image/logo.png", // optional
-      handler: function (response: any) {
-        setPaymentComplete(true);
-        generatePDF();
-        alert("Payment successful! Your invoice has been generated.");
-      },
-      prefill: {
-        name: userData.name,
-        email: userData.email,
-        contact: userData.phone,
-      },
-      notes: {
-        nights: nights.toString(),
-        room_type: selectedRoom.name,
-        check_in: startDate,
-      },
-      theme: {
-        color: "#00ffff",
-      },
-    };
+    try {
+      // Step 1: Create order on backend
+      const orderResponse = await fetch('/api/razorpay', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: grandTotal })
+      });
 
-    const rzp = new window.Razorpay(options);
-    rzp.on("payment.failed", function (response: any) {
-      alert("Payment failed. Please try again.");
+      if (!orderResponse.ok) {
+        throw new Error('Failed to create order');
+      }
+
+      const order = await orderResponse.json();
+
+      // Step 2: Initialize Razorpay with order_id
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        amount: order.amount,
+        currency: order.currency,
+        name: "Baywatch Resort",
+        description: `Booking for ${selectedRoom.name}`,
+        image: "/image/logo.png",
+        order_id: order.id, // Required for proper payment flow
+        handler: function (response: any) {
+          setPaymentComplete(true);
+          generatePDF();
+          alert("Payment successful! Your invoice has been generated.");
+        },
+        prefill: {
+          name: userData.name,
+          email: userData.email,
+          contact: userData.phone,
+        },
+        notes: {
+          nights: nights.toString(),
+          room_type: selectedRoom.name,
+          check_in: startDate,
+        },
+        theme: {
+          color: "#00ffff",
+        },
+      };
+
+      if (!options.key) {
+        alert("Razorpay key is missing. Please check your environment variables.");
+        return;
+      }
+
+      const rzp = new window.Razorpay(options);
+      rzp.on("payment.failed", function (response: any) {
+        alert("Payment failed. Please try again.");
+        console.error(response.error);
+      });
+
+      rzp.open();
+    } catch (error: any) {
+      alert(`Error: ${error.message}`);
+      console.error("Payment error:", error);
+    }
+  };
       console.error(response.error);
     });
     rzp.open();

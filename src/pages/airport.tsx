@@ -83,7 +83,7 @@ const Airport = () => {
                   <img
                     src={c.image}
                     alt={c.name}
-                    className="w-full h-70 object-cover"
+                    className="w-full h-screen object-cover"
                   />
                   <div className="p-4 text-center bg-gray-50">
                     <p

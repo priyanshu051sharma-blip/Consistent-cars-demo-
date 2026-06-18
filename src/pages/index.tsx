@@ -33,26 +33,43 @@ const Home: React.FC = () => {
 
         {/* Hero Content */}
         <div className="relative z-10 text-center px-6 max-w-5xl mx-auto space-y-8">
+          {/* Large Animated Logo */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.5 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1, ease: "easeOut" }}
+            className="mb-8"
+          >
+            <div className="inline-block">
+              <h2 className="text-7xl md:text-9xl font-black text-transparent bg-gradient-to-r from-cyan-400 via-blue-400 to-cyan-300 bg-clip-text drop-shadow-2xl" style={{textShadow: '0 0 60px rgba(0, 255, 255, 0.8), 0 0 120px rgba(0, 191, 255, 0.6)'}}>
+                CONSISTENT
+              </h2>
+              <motion.div
+                animate={{ y: [0, -10, 0] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              >
+                <h2 className="text-6xl md:text-8xl font-black text-transparent bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text" style={{textShadow: '0 0 50px rgba(0, 255, 255, 0.9)'}}>
+                  CARS
+                </h2>
+              </motion.div>
+            </div>
+          </motion.div>
+
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
+            transition={{ duration: 0.8, delay: 0.4 }}
           >
-            <div className="inline-block mb-4 px-4 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-sm font-semibold tracking-wider uppercase">
-              Premium Car Rental Service
+            <div className="inline-block mb-4 px-4 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-2xl font-semibold tracking-wider uppercase">
+              Consistent and Convenient
             </div>
-            <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 bg-gradient-to-r from-white via-cyan-100 to-cyan-400 bg-clip-text text-transparent drop-shadow-lg">
-              Drive Your Dream <br /> Car Today
-            </h1>
-            <p className="text-lg md:text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed">
-              Experience the thrill of the road with our exclusive fleet of luxury and comfort vehicles. Reliable, affordable, and always consistent.
-            </p>
+            {/* Removed heading and description as requested */}
           </motion.div>
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.8 }}
+            transition={{ delay: 0.8, duration: 0.8 }}
             className="flex flex-col sm:flex-row gap-4 justify-center items-center"
           >
             <Link href="/services">

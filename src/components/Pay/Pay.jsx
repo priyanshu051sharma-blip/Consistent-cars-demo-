@@ -37,14 +37,28 @@ const Pay = ({ amount, name, email, phone, bookingDetails }) => {
         });
       }
 
-      // Razorpay options
+      // Step 1: Create order on backend
+      const orderResponse = await fetch('/api/razorpay', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: amount })
+      });
+
+      if (!orderResponse.ok) {
+        throw new Error('Failed to create order');
+      }
+
+      const order = await orderResponse.json();
+
+      // Step 2: Razorpay options with order_id
       const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_1DP5ibkQQR9sj2",
-        amount: Math.round(amount * 100), // amount in paise
-        currency: "INR",
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        amount: order.amount,
+        currency: order.currency,
         name: "Consistent Cars",
         description: `Booking: ${bookingDetails?.vehicle || 'Vehicle'}`,
         image: "/image/logo.png",
+        order_id: order.id, // This is required!
         handler: async function (response) {
           // Payment Success
           console.log("Razorpay Response:", response);
@@ -60,7 +74,9 @@ const Pay = ({ amount, name, email, phone, bookingDetails }) => {
                 type: bookingDetails?.vehicle === "Hotel Stay" ? "Hotel" : "Transport",
                 details: bookingDetails,
                 amount: amount,
-                paymentId: response.razorpay_payment_id
+                paymentId: response.razorpay_payment_id,
+                orderId: response.razorpay_order_id,
+                signature: response.razorpay_signature
               })
             });
           } catch (error) {
@@ -79,6 +95,11 @@ const Pay = ({ amount, name, email, phone, bookingDetails }) => {
           color: "#0891b2", // Cyan-600
         },
       };
+
+      if (!options.key) {
+        alert("Razorpay key is missing. Please check your environment variables.");
+        return;
+      }
 
       // Open Razorpay modal
       const rzp = new window.Razorpay(options);

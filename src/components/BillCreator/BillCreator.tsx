@@ -1,6 +1,8 @@
 // components/BillCreator.tsx
 import React, { useState } from "react";
 import { v4 as uuidv4 } from "uuid";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 interface Car {
   id: string;
@@ -113,6 +115,65 @@ export default function BillCreator({
     w.print();
   }
 
+  function handleDownloadPDF(inv: Invoice) {
+    const doc = new jsPDF();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    let yPosition = 15;
+
+    // Header
+    doc.setFontSize(18);
+    doc.setTextColor(0, 255, 255);
+    doc.text("INVOICE", pageWidth / 2, yPosition, { align: "center" });
+    yPosition += 10;
+
+    // Invoice Details
+    doc.setFontSize(10);
+    doc.setTextColor(0, 0, 0);
+    doc.text(`Invoice ID: ${inv.id}`, 15, yPosition);
+    yPosition += 6;
+    doc.text(`Customer: ${inv.customerName}`, 15, yPosition);
+    yPosition += 6;
+    doc.text(`Date: ${new Date(inv.createdAt).toLocaleDateString()}`, 15, yPosition);
+    yPosition += 6;
+    doc.text(`Status: ${inv.paid ? "PAID" : "PENDING"}`, 15, yPosition);
+    yPosition += 10;
+
+    // Items Table
+    const tableData = inv.items.map((item) => [
+      item.description,
+      `₹${item.amount.toFixed(2)}`,
+    ]);
+    tableData.push(["SUBTOTAL", `₹${inv.subtotal.toFixed(2)}`]);
+    tableData.push(["TAX (18%)", `₹${inv.tax.toFixed(2)}`]);
+    tableData.push(["DEPOSIT", `₹${inv.deposit.toFixed(2)}`]);
+    tableData.push(["TOTAL", `₹${inv.total.toFixed(2)}`]);
+
+    const columns = ["Description", "Amount"];
+    doc.autoTable({
+      head: [columns],
+      body: tableData,
+      startY: yPosition,
+      theme: "grid",
+      headStyles: { fillColor: [0, 255, 255], textColor: [0, 0, 0], fontStyle: "bold" },
+      bodyStyles: { textColor: [0, 0, 0] },
+      alternateRowStyles: { fillColor: [240, 240, 240] },
+    });
+
+    // Footer
+    doc.setFontSize(8);
+    doc.setTextColor(100, 100, 100);
+    doc.text(
+      "Thank you for your business!",
+      pageWidth / 2,
+      pageHeight - 10,
+      { align: "center" }
+    );
+
+    // Download
+    doc.save(`Invoice_${inv.id}.pdf`);
+  }
+
   return (
     <div className="bg-gray-900 p-6 rounded-xl shadow-lg border border-[#00ffff]">
       <h2 className="text-2xl font-bold text-[#00ffff] mb-4">Bill Creation</h2>
@@ -171,6 +232,45 @@ export default function BillCreator({
                 <button
                   onClick={() => removeItem(it.id)}
                   className="px-3 bg-red-600 rounded"
+
+      {/* Invoice List with Download/Print Options */}
+      <div className="mt-8">
+        <h3 className="text-xl font-bold text-[#00ffff] mb-4">Recent Invoices</h3>
+        <div className="space-y-3 max-h-96 overflow-y-auto">
+          {invoices.length === 0 ? (
+            <div className="text-gray-400">No invoices created yet</div>
+          ) : (
+            invoices.map((inv) => (
+              <div
+                key={inv.id}
+                className="bg-gray-800 p-4 rounded border border-gray-700 flex justify-between items-center"
+              >
+                <div className="flex-1">
+                  <div className="font-semibold">{inv.customerName}</div>
+                  <div className="text-sm text-gray-400">
+                    ₹{inv.total.toFixed(2)} • {inv.paid ? "✓ Paid" : "Pending"} •{" "}
+                    {new Date(inv.createdAt).toLocaleDateString()}
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleDownloadPDF(inv)}
+                    className="px-3 py-1 bg-green-600 rounded text-sm hover:bg-green-700"
+                  >
+                    Download PDF
+                  </button>
+                  <button
+                    onClick={() => handlePrint(inv)}
+                    className="px-3 py-1 bg-blue-600 rounded text-sm hover:bg-blue-700"
+                  >
+                    Print
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
                 >
                   Remove
                 </button>

@@ -1,11 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import Razorpay from "razorpay";
 
-const razorpayInstance = new Razorpay({
-  key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "",
-  key_secret: process.env.RAZORPAY_KEY_SECRET || "",
-});
-
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -18,19 +13,49 @@ export default async function handler(
         return res.status(400).json({ error: "Amount is required" });
       }
 
+      // Validate environment variables
+      const keyId = process.env.RAZORPAY_KEY_ID;
+      const keySecret = process.env.RAZORPAY_KEY_SECRET;
+
+      if (!keyId || !keySecret) {
+        console.error("Missing Razorpay credentials:", {
+          keyId: !!keyId,
+          keySecret: !!keySecret,
+        });
+        return res.status(500).json({
+          error: "Razorpay credentials not configured",
+          details: "Please set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in .env",
+        });
+      }
+
+      // Initialize Razorpay with credentials
+      const razorpayInstance = new Razorpay({
+        key_id: keyId,
+        key_secret: keySecret,
+      });
+
       const options = {
         amount: Math.round(amount * 100), // amount in paise
         currency: "INR",
         receipt: "receipt_order_" + Date.now(),
       };
 
+      console.log("Creating Razorpay order with options:", {
+        amount: options.amount,
+        currency: options.currency,
+        hasKeyId: !!keyId,
+      });
+
       const order = await razorpayInstance.orders.create(options);
+
+      console.log("Order created successfully:", order.id);
       return res.status(200).json(order);
     } catch (error: any) {
       console.error("Razorpay error:", error);
       return res.status(500).json({
         error: "Order creation failed",
-        details: error.message,
+        details: error?.message || String(error),
+        type: error?.code || "UNKNOWN_ERROR",
       });
     }
   } else {

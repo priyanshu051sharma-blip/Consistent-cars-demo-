@@ -34,7 +34,7 @@ const features = [
   {
     icon: FaBalanceScale,
     title: "Value for Money",
-    description: "Affordable rides without compromising on quality.",
+    description: "We deliver quality, comfort which offers value for money.",
   },
   {
     icon: FaLock,

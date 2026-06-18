@@ -41,7 +41,7 @@ const Header: React.FC = () => {
             </span>
             <span className="text-3xl font-extrabold text-white tracking-tight drop-shadow-lg">
               Consistent
-              <span className="text-[#00ffff] animate-gradient-x bg-gradient-to-r from-[#00ffff] via-[#00bfff] to-[#00ffff] bg-clip-text text-transparent">
+              <span className="text-[#00ffff] animate-pulse bg-gradient-to-r from-[#00ffff] via-[#00bfff] to-[#00ffff] bg-clip-text text-transparent drop-shadow-lg shadow-cyan-500/50 animate-gradient-x" style={{textShadow: '0 0 20px rgba(0, 255, 255, 0.8), 0 0 40px rgba(0, 191, 255, 0.6)'}}>
                 Cars
               </span>
             </span>

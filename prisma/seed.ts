@@ -7,11 +7,31 @@ async function main() {
     console.log('Start seeding ...')
 
     // --- Clean DB ---
+    await prisma.booking.deleteMany();
+    await prisma.pricing.deleteMany();
     await prisma.hotel.deleteMany();
     await prisma.location.deleteMany();
     await prisma.car.deleteMany();
 
     // --- Locations ---
+    // Delhi Locations
+    const delhi = await prisma.location.create({
+        data: {
+            name: 'Delhi',
+            image: '/image/delhi.jpg',
+            description: 'India\'s capital city - serving Delhi Airport, City Center, Gurgaon, and Noida.',
+        },
+    })
+
+    // Pune Locations
+    const pune = await prisma.location.create({
+        data: {
+            name: 'Pune',
+            image: '/image/pune.jpg',
+            description: 'City of learning and innovation - serving Pune Airport, City Center, and surrounding areas.',
+        },
+    })
+
     const sindhudurg = await prisma.location.create({
         data: {
             name: 'Sindhudurg',
@@ -146,25 +166,196 @@ async function main() {
 
 
     // --- Cars ---
-    await prisma.car.createMany({
-        data: [
-            {
-                name: 'Toyota Innova Crysta',
-                type: 'SUV',
-                seats: 7,
-                baseDayPrice: 3500,
-                image: '/image/crysta-white.jpg',
-                features: 'AC,Bluetooth,Reclining Seats,Airbags',
-            },
-            {
-                name: 'Swift Dzire',
-                type: 'Sedan',
-                seats: 4,
-                baseDayPrice: 2000,
-                image: '/image/dzire.png',
-                features: 'AC,Music System,Comfortable Legroom',
-            }
-        ],
+    const sedan = await prisma.car.create({
+        data: {
+            name: 'Swift Dzire',
+            type: 'Sedan',
+            seats: 4,
+            baseDayPrice: 2000,
+            image: '/image/dzire.png',
+            features: 'AC,Music System,Comfortable Legroom',
+        },
+    })
+
+    const innova = await prisma.car.create({
+        data: {
+            name: 'Toyota Innova Crysta',
+            type: 'SUV',
+            seats: 7,
+            baseDayPrice: 3500,
+            image: '/image/crysta-white.jpg',
+            features: 'AC,Bluetooth,Reclining Seats,Airbags',
+        },
+    })
+
+    // --- Pricing for Delhi ---
+    // Sedan - Delhi Local (8 Hrs 80 Km)
+    await prisma.pricing.create({
+        data: {
+            carId: sedan.id,
+            location: 'Delhi Local',
+            pricePerKm: 16,
+            basePrice: 1600,
+            baseKm: 80,
+            extraHourRate: 150,
+            driverAllowance: 300,
+            description: '8 Hrs 80 Km',
+        },
+    })
+
+    // Sedan - Delhi Outstation (250 Km)
+    await prisma.pricing.create({
+        data: {
+            carId: sedan.id,
+            location: 'Delhi Outstation',
+            pricePerKm: 15,
+            basePrice: 3750,
+            baseKm: 250,
+            extraHourRate: 150,
+            driverAllowance: 300,
+            description: '250 Km Outstation',
+        },
+    })
+
+    // Innova Crysta - Delhi Local (8 Hrs 80 Km)
+    await prisma.pricing.create({
+        data: {
+            carId: innova.id,
+            location: 'Delhi Local',
+            pricePerKm: 22,
+            basePrice: 3000,
+            baseKm: 80,
+            extraHourRate: 300,
+            driverAllowance: 300,
+            description: '8 Hrs 80 Km',
+        },
+    })
+
+    // Innova Crysta - Delhi Outstation (250 Km)
+    await prisma.pricing.create({
+        data: {
+            carId: innova.id,
+            location: 'Delhi Outstation',
+            pricePerKm: 22,
+            basePrice: 5500,
+            baseKm: 250,
+            extraHourRate: 300,
+            driverAllowance: 300,
+            description: '250 Km Outstation',
+        },
+    })
+
+    // --- Pricing for Pune ---
+    // Sedan - Pune Local (8 Hrs 80 Km)
+    await prisma.pricing.create({
+        data: {
+            carId: sedan.id,
+            location: 'Pune Local',
+            pricePerKm: 16,
+            basePrice: 1800,
+            baseKm: 80,
+            extraHourRate: 150,
+            driverAllowance: 300,
+            description: '8 Hrs 80 Km',
+        },
+    })
+
+    // Sedan - Pune Outstation (300 Km minimum)
+    await prisma.pricing.create({
+        data: {
+            carId: sedan.id,
+            location: 'Pune Outstation',
+            pricePerKm: 16,
+            basePrice: 5100,
+            baseKm: 300,
+            extraHourRate: 150,
+            driverAllowance: 300,
+            description: '300 Km Outstation (Minimum)',
+        },
+    })
+
+    // Sedan - Mumbai Airport Drop from Pune
+    await prisma.pricing.create({
+        data: {
+            carId: sedan.id,
+            location: 'Mumbai Airport Drop',
+            pricePerKm: 16,
+            basePrice: 4500,
+            baseKm: 160,
+            extraHourRate: 150,
+            driverAllowance: 300,
+            description: 'Mumbai Airport Drop (4 Hrs 160 Km)',
+        },
+    })
+
+    // Sedan - Pune Airport Drop/Pick (4 Hrs 40 Km)
+    await prisma.pricing.create({
+        data: {
+            carId: sedan.id,
+            location: 'Pune Airport Drop/Pick',
+            pricePerKm: 16,
+            basePrice: 1100,
+            baseKm: 40,
+            extraHourRate: 150,
+            driverAllowance: 250,
+            description: '4 Hrs 40 Km',
+        },
+    })
+
+    // Innova Crysta - Pune Local (8 Hrs 80 Km)
+    await prisma.pricing.create({
+        data: {
+            carId: innova.id,
+            location: 'Pune Local',
+            pricePerKm: 24,
+            basePrice: 3800,
+            baseKm: 80,
+            extraHourRate: 250,
+            driverAllowance: 350,
+            description: '8 Hrs 80 Km',
+        },
+    })
+
+    // Innova Crysta - Pune Outstation (300 Km minimum)
+    await prisma.pricing.create({
+        data: {
+            carId: innova.id,
+            location: 'Pune Outstation',
+            pricePerKm: 24,
+            basePrice: 7200,
+            baseKm: 300,
+            extraHourRate: 250,
+            driverAllowance: 350,
+            description: '300 Km Outstation (Minimum)',
+        },
+    })
+
+    // Innova Crysta - Mumbai Airport Drop from Pune
+    await prisma.pricing.create({
+        data: {
+            carId: innova.id,
+            location: 'Mumbai Airport Drop',
+            pricePerKm: 24,
+            basePrice: 5500,
+            baseKm: 160,
+            extraHourRate: 250,
+            driverAllowance: 350,
+            description: 'Mumbai Airport Drop (4 Hrs 160 Km)',
+        },
+    })
+
+    // Innova Crysta - Pune Airport Drop/Pick (4 Hrs 40 Km)
+    await prisma.pricing.create({
+        data: {
+            carId: innova.id,
+            location: 'Pune Airport Drop/Pick',
+            pricePerKm: 24,
+            basePrice: 2200,
+            baseKm: 40,
+            extraHourRate: 250,
+            driverAllowance: 300,
+            description: '4 Hrs 40 Km',
+        },
     })
 
     console.log('Seeding finished.')

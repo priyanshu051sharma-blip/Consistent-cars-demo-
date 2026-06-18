@@ -42,8 +42,24 @@ model Car {
   baseDayPrice Int
   image        String
   features     String   // Comma separated or JSON
+  pricing      Pricing[]
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+}
+
+model Pricing {
+  id              String   @id @default(uuid())
+  carId           String
+  car             Car      @relation(fields: [carId], references: [id])
+  location        String   // "Delhi Local", "Delhi Outstation", "Pune Local", etc.
+  pricePerKm      Float
+  basePrice       Float    // Price for 8 hrs or base package
+  baseKm          Int      // Km included in base price (e.g., 80 km for 8 hrs)
+  extraHourRate   Float
+  driverAllowance Float
+  description     String?  // e.g., "8 Hrs 80 Km"
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 model Booking {
