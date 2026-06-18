@@ -208,10 +208,6 @@ export default function BaywatchResort() {
       console.error("Payment error:", error);
     }
   };
-      console.error(response.error);
-    });
-    rzp.open();
-  };
 
   return (
     <div className="min-h-screen bg-[#111827] text-white p-10">
