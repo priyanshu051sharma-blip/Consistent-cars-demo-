@@ -150,7 +150,7 @@ export default function BillCreator({
     tableData.push(["TOTAL", `₹${inv.total.toFixed(2)}`]);
 
     const columns = ["Description", "Amount"];
-    doc.autoTable({
+    autoTable(doc, {
       head: [columns],
       body: tableData,
       startY: yPosition,
@@ -232,6 +232,19 @@ export default function BillCreator({
                 <button
                   onClick={() => removeItem(it.id)}
                   className="px-3 bg-red-600 rounded"
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+            {items.length === 0 && (
+              <div className="text-sm text-gray-400">
+                No custom items added yet. Add rental fee, extras, fines here.
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
 
       {/* Invoice List with Download/Print Options */}
       <div className="mt-8">
@@ -271,64 +284,51 @@ export default function BillCreator({
           )}
         </div>
       </div>
-                >
-                  Remove
-                </button>
-              </div>
-            ))}
-            {items.length === 0 && (
-              <div className="text-sm text-gray-400">
-                No custom items added yet. Add rental fee, extras, fines here.
-              </div>
-            )}
-          </div>
-        </div>
 
-        <div className="grid grid-cols-2 gap-2">
-          <input
-            type="number"
-            step="0.01"
-            value={taxRate}
-            onChange={(e) => setTaxRate(parseFloat(e.target.value || "0"))}
-            className="p-2 bg-gray-800 rounded"
-          />
-          <input
-            type="number"
-            step="0.01"
-            value={deposit}
-            onChange={(e) => setDeposit(parseFloat(e.target.value || "0"))}
-            className="p-2 bg-gray-800 rounded"
-            placeholder="Deposit"
-          />
-        </div>
+      <div className="grid grid-cols-2 gap-2">
+        <input
+          type="number"
+          step="0.01"
+          value={taxRate}
+          onChange={(e) => setTaxRate(parseFloat(e.target.value || "0"))}
+          className="p-2 bg-gray-800 rounded"
+        />
+        <input
+          type="number"
+          step="0.01"
+          value={deposit}
+          onChange={(e) => setDeposit(parseFloat(e.target.value || "0"))}
+          className="p-2 bg-gray-800 rounded"
+          placeholder="Deposit"
+        />
+      </div>
 
-        <div className="p-3 bg-gray-800 rounded">
-          <div>Subtotal: ₹{subtotal.toFixed(2)}</div>
-          <div>Tax: ₹{tax.toFixed(2)}</div>
-          <div className="font-bold">
-            Total (after deposit): ₹{total.toFixed(2)}
-          </div>
+      <div className="p-3 bg-gray-800 rounded">
+        <div>Subtotal: ₹{subtotal.toFixed(2)}</div>
+        <div>Tax: ₹{tax.toFixed(2)}</div>
+        <div className="font-bold">
+          Total (after deposit): ₹{total.toFixed(2)}
         </div>
+      </div>
 
-        <div className="flex gap-3">
-          <button
-            onClick={handleCreate}
-            className="px-4 py-2 bg-[#00ffff] rounded font-bold text-gray-900"
-          >
-            Create Invoice
-          </button>
-          <button
-            onClick={() => {
-              // quick demo print last created invoice
-              const inv = invoices[0];
-              if (!inv) return alert("No invoice to print");
-              handlePrint(inv);
-            }}
-            className="px-4 py-2 bg-gray-700 rounded border border-[#00ffff]"
-          >
-            Print Last
-          </button>
-        </div>
+      <div className="flex gap-3">
+        <button
+          onClick={handleCreate}
+          className="px-4 py-2 bg-[#00ffff] rounded font-bold text-gray-900"
+        >
+          Create Invoice
+        </button>
+        <button
+          onClick={() => {
+            // quick demo print last created invoice
+            const inv = invoices[0];
+            if (!inv) return alert("No invoice to print");
+            handlePrint(inv);
+          }}
+          className="px-4 py-2 bg-gray-700 rounded border border-[#00ffff]"
+        >
+          Print Last
+        </button>
       </div>
     </div>
   );
