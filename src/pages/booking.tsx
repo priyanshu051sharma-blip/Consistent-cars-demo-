@@ -6,6 +6,14 @@ import { BadgeCheck, Calendar, Clock, MapPin, Car as CarIcon, ArrowRight, Downlo
 import { motion, AnimatePresence } from "framer-motion";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
+
+// Extend jsPDF type to include autoTable
+declare module "jspdf" {
+  interface jsPDF {
+    autoTable: (options: any) => jsPDF;
+    lastAutoTable?: any;
+  }
+}
 import AIChatBot from "../components/AIChabot/AIChatbot";
 import Pay from "../components/Pay/Pay";
 import { useRouter } from "next/router";
@@ -99,7 +107,7 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
         doc.setFontSize(14);
         doc.text("Booking Summary", 14, 55);
 
-        (doc as any).autoTable({
+        doc.autoTable({
             startY: 60,
             head: [["Item", "Details"]],
             body: [
@@ -119,7 +127,7 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
         const finalY = (doc as any).lastAutoTable.finalY + 15;
         doc.text("Payment Breakdown", 14, finalY);
 
-        (doc as any).autoTable({
+        doc.autoTable({
             startY: finalY + 5,
             head: [["Description", "Amount"]],
             body: [

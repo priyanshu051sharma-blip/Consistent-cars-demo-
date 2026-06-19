@@ -11,6 +11,14 @@ import jsPDF from "jspdf";
 import "jspdf-autotable";
 import { Download } from "lucide-react";
 
+// Extend jsPDF type to include autoTable
+declare module "jspdf" {
+  interface jsPDF {
+    autoTable: (options: any) => jsPDF;
+    lastAutoTable?: any;
+  }
+}
+
 interface Booking {
   id: string;
   customerName: string;
@@ -145,7 +153,7 @@ export default function AdminDashboard() {
     const subDesc = isHotel ? `1 Night @ ${rate}` : `${details.duration || 1} Days @ ${rate}/day`;
 
     // Table
-    (doc as any).autoTable({
+    doc.autoTable({
       startY: 105,
       head: [["Description", "Details", "Amount"]],
       body: [

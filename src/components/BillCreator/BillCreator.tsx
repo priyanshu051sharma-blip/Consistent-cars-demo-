@@ -4,6 +4,14 @@ import { v4 as uuidv4 } from "uuid";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 
+// Extend jsPDF type to include autoTable
+declare module "jspdf" {
+  interface jsPDF {
+    autoTable: (options: any) => jsPDF;
+    lastAutoTable?: any;
+  }
+}
+
 interface Car {
   id: string;
   make: string;
@@ -150,7 +158,7 @@ export default function BillCreator({
     tableData.push(["TOTAL", `₹${inv.total.toFixed(2)}`]);
 
     const columns = ["Description", "Amount"];
-    (doc as any).autoTable({
+    doc.autoTable({
       head: [columns],
       body: tableData,
       startY: yPosition,

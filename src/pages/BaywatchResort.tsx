@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import ImageGallery from "@/components/Image Gallery/ImageGallery";
 import { User, Mail, Phone, Calendar } from "lucide-react";
 import { jsPDF } from "jspdf";
-import autoTable from "jspdf-autotable";
+import "jspdf-autotable";
 import Script from "next/script";
 import Pay from "@/components/Pay/Pay";
 import AIChatBot from "../components/AIChabot/AIChatbot";
@@ -13,10 +13,11 @@ declare global {
   }
 }
 
-interface jsPDFWithPlugin extends jsPDF {
-  lastAutoTable?: {
-    finalY: number;
-  };
+declare module "jspdf" {
+  interface jsPDF {
+    autoTable: (options: any) => jsPDF;
+    lastAutoTable?: any;
+  }
 }
 
 const roomTypes = [
@@ -88,7 +89,7 @@ export default function BaywatchResort() {
   const grandTotal = total + gst - discount;
 
   const generatePDF = () => {
-    const doc = new jsPDF() as jsPDFWithPlugin;
+    const doc = new jsPDF();
     doc.setFillColor(0, 191, 255);
     doc.rect(0, 0, 210, 40, "F");
     doc.setTextColor(255, 255, 255);
@@ -98,7 +99,7 @@ export default function BaywatchResort() {
     doc.setTextColor(0);
     doc.setFontSize(14);
     doc.text("Customer Details", 14, 50);
-    autoTable(doc, {
+    doc.autoTable({
       startY: 55,
       head: [["Field", "Details"]],
       body: [
@@ -120,7 +121,7 @@ export default function BaywatchResort() {
     doc.setFontSize(16);
     doc.setTextColor(0, 102, 204);
     doc.text("Billing Summary", 14, priceY);
-    autoTable(doc, {
+    doc.autoTable({
       startY: priceY + 5,
       head: [["Description", "Amount (₹)"]],
       body: [
