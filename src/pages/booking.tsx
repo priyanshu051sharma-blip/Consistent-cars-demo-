@@ -6,14 +6,6 @@ import { BadgeCheck, Calendar, Clock, MapPin, Car as CarIcon, ArrowRight, Downlo
 import { motion, AnimatePresence } from "framer-motion";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
-
-// Extend jsPDF type to include autoTable
-declare module "jspdf" {
-  interface jsPDF {
-    autoTable: (options: any) => jsPDF;
-    lastAutoTable?: any;
-  }
-}
 import AIChatBot from "../components/AIChabot/AIChatbot";
 import Pay from "../components/Pay/Pay";
 import { useRouter } from "next/router";

@@ -4,14 +4,6 @@ import { v4 as uuidv4 } from "uuid";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 
-// Extend jsPDF type to include autoTable
-declare module "jspdf" {
-  interface jsPDF {
-    autoTable: (options: any) => jsPDF;
-    lastAutoTable?: any;
-  }
-}
-
 interface Car {
   id: string;
   make: string;

@@ -11,14 +11,6 @@ import jsPDF from "jspdf";
 import "jspdf-autotable";
 import { Download } from "lucide-react";
 
-// Extend jsPDF type to include autoTable
-declare module "jspdf" {
-  interface jsPDF {
-    autoTable: (options: any) => jsPDF;
-    lastAutoTable?: any;
-  }
-}
-
 interface Booking {
   id: string;
   customerName: string;

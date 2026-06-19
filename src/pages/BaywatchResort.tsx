@@ -13,13 +13,6 @@ declare global {
   }
 }
 
-declare module "jspdf" {
-  interface jsPDF {
-    autoTable: (options: any) => jsPDF;
-    lastAutoTable?: any;
-  }
-}
-
 const roomTypes = [
   {
     name: "Deluxe Suite, Sea View",
