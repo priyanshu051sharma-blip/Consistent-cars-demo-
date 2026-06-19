@@ -10,8 +10,7 @@
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
-    "postinstall": "prisma generate",
-    "vercel-build": "prisma generate && prisma migrate deploy && prisma db push && tsx prisma/seed.ts && next build"
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@huggingface/inference": "^4.3.2",
