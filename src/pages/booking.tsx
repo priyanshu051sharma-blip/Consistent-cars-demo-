@@ -251,6 +251,44 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
                             exit={{ opacity: 0, x: -20 }}
                             className="max-w-5xl mx-auto"
                         >
+                            {/* Pickup & Drop Section */}
+                            <div className="bg-slate-800/80 border border-white/10 rounded-3xl p-6 mb-8">
+                                <h3 className="text-lg font-bold text-cyan-400 mb-4 flex items-center gap-2">
+                                    <MapPin size={20} /> Enter Pickup & Drop Location
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-sm text-slate-400 mb-1 block">Pickup Location</label>
+                                        <input
+                                            type="text"
+                                            placeholder="e.g., Delhi Airport, Connaught Place"
+                                            value={pickupLocation}
+                                            onChange={(e) => setPickupLocation(e.target.value)}
+                                            className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-cyan-500 outline-none"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-sm text-slate-400 mb-1 block">Drop Location</label>
+                                        <input
+                                            type="text"
+                                            placeholder="e.g., Noida, Gurgaon, Hotel Name"
+                                            value={dropLocation}
+                                            onChange={(e) => setDropLocation(e.target.value)}
+                                            className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-cyan-500 outline-none"
+                                        />
+                                    </div>
+                                </div>
+                                {calculatingDistance && (
+                                    <p className="text-cyan-400 text-sm mt-3">🔄 Calculating distance...</p>
+                                )}
+                                {distanceData && (
+                                    <div className="flex gap-6 mt-3 bg-cyan-500/10 border border-cyan-500/20 rounded-xl px-4 py-3">
+                                        <span className="text-white text-sm">📍 Distance: <strong>{(distanceData.distance / 1000).toFixed(1)} km</strong></span>
+                                        <span className="text-white text-sm">⏱️ Duration: <strong>{distanceData.duration}</strong></span>
+                                    </div>
+                                )}
+                            </div>
+
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 {cars.map((car, index) => (
                                     <motion.div
