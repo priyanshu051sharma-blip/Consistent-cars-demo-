@@ -44,6 +44,14 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
     const [date, setDate] = useState("");
     const [time, setTime] = useState("");
     const [showPayment, setShowPayment] = useState(false);
+    const [pickupLocation, setPickupLocation] = useState("");
+    const [dropLocation, setDropLocation] = useState("");
+    const [kilometers, setKilometers] = useState<number>(0);
+    const [calculatingDistance, setCalculatingDistance] = useState(false);
+    const [distanceData, setDistanceData] = useState<{
+        distance: number;
+        duration: string;
+    } | null>(null);
 
     const [contactDetails, setContactDetails] = useState({
         name: "",
@@ -69,6 +77,46 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
             }
         }
     }, [router.isReady, locationQuery, locations]);
+
+    // Calculate distance when both locations are entered
+    useEffect(() => {
+        if (pickupLocation && dropLocation) {
+            const timeoutId = setTimeout(() => {
+                calculateDistance();
+            }, 1000);
+            return () => clearTimeout(timeoutId);
+        }
+    }, [pickupLocation, dropLocation]);
+
+    const calculateDistance = async () => {
+        if (!pickupLocation || !dropLocation) return;
+
+        setCalculatingDistance(true);
+        try {
+            const response = await fetch("/api/calculate-distance", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    origin: pickupLocation,
+                    destination: dropLocation,
+                }),
+            });
+
+            const data = await response.json();
+            if (data.distance && data.duration) {
+                setDistanceData(data);
+                const distanceInKm = Math.ceil(data.distance / 1000);
+                setKilometers(distanceInKm);
+                // Estimate hours based on distance (assuming 40 km/hr average)
+                const estimatedHours = Math.ceil(distanceInKm / 40);
+                setHours(Math.max(1, estimatedHours));
+            }
+        } catch (error) {
+            console.error("Failed to calculate distance:", error);
+        } finally {
+            setCalculatingDistance(false);
+        }
+    };
 
     // If no location selected (user browsed here directly), maybe redirect or show dropdown?
     // ideally redirect to services, but let's handle graceful fallback text
@@ -274,7 +322,56 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
                                             <input type="date" onChange={(e) => setDate(e.target.value)} min={new Date().toISOString().split("T")[0]} className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-cyan-500 outline-none" />
                                             <input type="time" onChange={(e) => setTime(e.target.value)} className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-cyan-500 outline-none" />
                                         </div>
+                                        
+                                        <div className="border-t border-white/10 my-2" />
+                                        <div className="space-y-2">
+                                            <label className="text-sm text-slate-300 flex items-center gap-2">
+                                                <MapPin size={16} className="text-cyan-400" />
+                                                Pickup Location
+                                            </label>
+                                            <input 
+                                                type="text" 
+                                                placeholder="e.g., Delhi Airport, Connaught Place" 
+                                                value={pickupLocation}
+                                                onChange={(e) => setPickupLocation(e.target.value)} 
+                                                className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-cyan-500 outline-none" 
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-sm text-slate-300 flex items-center gap-2">
+                                                <MapPin size={16} className="text-cyan-400" />
+                                                Drop Location
+                                            </label>
+                                            <input 
+                                                type="text" 
+                                                placeholder="e.g., Noida, Gurgaon" 
+                                                value={dropLocation}
+                                                onChange={(e) => setDropLocation(e.target.value)} 
+                                                className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-cyan-500 outline-none" 
+                                            />
+                                        </div>
+
+                                        {calculatingDistance && (
+                                            <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-3 text-cyan-400 text-sm">
+                                                🔄 Calculating distance...
+                                            </div>
+                                        )}
+                                        
+                                        {distanceData && (
+                                            <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-4 space-y-1">
+                                                <div className="flex justify-between text-sm">
+                                                    <span className="text-slate-300">📍 Distance:</span>
+                                                    <span className="text-white font-bold">{(distanceData.distance / 1000).toFixed(1)} km</span>
+                                                </div>
+                                                <div className="flex justify-between text-sm">
+                                                    <span className="text-slate-300">⏱️ Duration:</span>
+                                                    <span className="text-white font-bold">{distanceData.duration}</span>
+                                                </div>
+                                            </div>
+                                        )}
+                                        
                                         <input type="number" min="1" value={hours} onChange={(e) => setHours(Math.max(1, parseInt(e.target.value) || 1))} className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-cyan-500 outline-none" placeholder="Duration (Hours)" />
+                                        
                                         <div className="border-t border-white/10 my-2" />
                                         <input type="text" placeholder="Full Name" onChange={(e) => setContactDetails({ ...contactDetails, name: e.target.value })} className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-cyan-500 outline-none" />
                                         <input type="email" placeholder="Email" onChange={(e) => setContactDetails({ ...contactDetails, email: e.target.value })} className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-cyan-500 outline-none" />
