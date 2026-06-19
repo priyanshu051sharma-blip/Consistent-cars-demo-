@@ -7,11 +7,11 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && prisma migrate deploy && next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
     "postinstall": "prisma generate",
-    "db:seed": "tsx prisma/seed.ts"
+    "vercel-build": "prisma generate && prisma migrate deploy && prisma db push && tsx prisma/seed.ts && next build"
   },
   "dependencies": {
     "@huggingface/inference": "^4.3.2",
