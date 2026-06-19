@@ -5,7 +5,7 @@ import prisma from "../lib/prisma";
 import { BadgeCheck, Calendar, Clock, MapPin, Car as CarIcon, ArrowRight, Download, CreditCard, ChevronLeft } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { jsPDF } from "jspdf";
-import autoTable from "jspdf-autotable";
+import "jspdf-autotable";
 import AIChatBot from "../components/AIChabot/AIChatbot";
 import Pay from "../components/Pay/Pay";
 import { useRouter } from "next/router";
@@ -99,7 +99,7 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
         doc.setFontSize(14);
         doc.text("Booking Summary", 14, 55);
 
-        autoTable(doc, {
+        (doc as any).autoTable({
             startY: 60,
             head: [["Item", "Details"]],
             body: [
@@ -119,7 +119,7 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
         const finalY = (doc as any).lastAutoTable.finalY + 15;
         doc.text("Payment Breakdown", 14, finalY);
 
-        autoTable(doc, {
+        (doc as any).autoTable({
             startY: finalY + 5,
             head: [["Description", "Amount"]],
             body: [

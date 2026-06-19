@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+import "jspdf-autotable";
 
 interface Car {
   id: string;
@@ -150,7 +150,7 @@ export default function BillCreator({
     tableData.push(["TOTAL", `₹${inv.total.toFixed(2)}`]);
 
     const columns = ["Description", "Amount"];
-    autoTable(doc, {
+    (doc as any).autoTable({
       head: [columns],
       body: tableData,
       startY: yPosition,

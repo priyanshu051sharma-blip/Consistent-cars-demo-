@@ -8,7 +8,7 @@ import Link from "next/link"; // If needed for links
 import CarManager from "../components/CarManager/CarManager";
 import HotelManager from "../components/HotelManager/HotelManager";
 import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+import "jspdf-autotable";
 import { Download } from "lucide-react";
 
 interface Booking {
@@ -145,7 +145,7 @@ export default function AdminDashboard() {
     const subDesc = isHotel ? `1 Night @ ${rate}` : `${details.duration || 1} Days @ ${rate}/day`;
 
     // Table
-    autoTable(doc, {
+    (doc as any).autoTable({
       startY: 105,
       head: [["Description", "Details", "Amount"]],
       body: [
