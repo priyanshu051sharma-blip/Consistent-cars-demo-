@@ -39,7 +39,16 @@ const DelhiBooking = () => {
         phone: "",
         date: "",
         time: "",
+        pickupLocation: "",
+        dropLocation: "",
     });
+
+    const [distanceData, setDistanceData] = useState<{
+        distance: number;
+        duration: string;
+    } | null>(null);
+
+    const [calculatingDistance, setCalculatingDistance] = useState(false);
 
     const delhiLocations = [
         "Delhi Airport",
@@ -52,6 +61,45 @@ const DelhiBooking = () => {
     useEffect(() => {
         fetchPricing();
     }, []);
+
+    const calculateDistance = async () => {
+        if (!contactDetails.pickupLocation || !contactDetails.dropLocation) {
+            return;
+        }
+
+        setCalculatingDistance(true);
+        try {
+            const response = await fetch("/api/calculate-distance", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    origin: contactDetails.pickupLocation,
+                    destination: contactDetails.dropLocation,
+                }),
+            });
+
+            const data = await response.json();
+            if (data.distance && data.duration) {
+                setDistanceData(data);
+                const distanceInKm = Math.ceil(data.distance / 1000);
+                handleKmChange(distanceInKm);
+            }
+        } catch (error) {
+            console.error("Failed to calculate distance:", error);
+            alert("Failed to calculate distance. Please enter kilometers manually.");
+        } finally {
+            setCalculatingDistance(false);
+        }
+    };
+
+    useEffect(() => {
+        if (contactDetails.pickupLocation && contactDetails.dropLocation) {
+            const timeoutId = setTimeout(() => {
+                calculateDistance();
+            }, 1000);
+            return () => clearTimeout(timeoutId);
+        }
+    }, [contactDetails.pickupLocation, contactDetails.dropLocation]);
 
     const fetchPricing = async () => {
         try {
@@ -217,8 +265,49 @@ const DelhiBooking = () => {
                         {/* Kilometer Selection */}
                         <div className="bg-gray-800 p-6 rounded-xl border border-cyan-500/30">
                             <h3 className="text-xl font-bold text-cyan-400 mb-4">
+                                <MapPin className="inline mr-2" size={20} />
+                                Pickup & Drop Locations
+                            </h3>
+                            <div className="space-y-3">
+                                <input
+                                    type="text"
+                                    placeholder="Pickup Location (e.g., Delhi Airport)"
+                                    value={contactDetails.pickupLocation}
+                                    onChange={(e) =>
+                                        setContactDetails({ ...contactDetails, pickupLocation: e.target.value })
+                                    }
+                                    className="w-full p-3 bg-gray-700 text-white rounded-lg border border-gray-600 focus:border-cyan-500"
+                                />
+                                <input
+                                    type="text"
+                                    placeholder="Drop Location (e.g., Connaught Place)"
+                                    value={contactDetails.dropLocation}
+                                    onChange={(e) =>
+                                        setContactDetails({ ...contactDetails, dropLocation: e.target.value })
+                                    }
+                                    className="w-full p-3 bg-gray-700 text-white rounded-lg border border-gray-600 focus:border-cyan-500"
+                                />
+                                {calculatingDistance && (
+                                    <p className="text-cyan-400 text-sm">Calculating distance...</p>
+                                )}
+                                {distanceData && (
+                                    <div className="bg-gray-700 p-3 rounded-lg">
+                                        <p className="text-white text-sm">
+                                            📍 Distance: <span className="font-bold">{(distanceData.distance / 1000).toFixed(1)} km</span>
+                                        </p>
+                                        <p className="text-white text-sm">
+                                            ⏱️ Duration: <span className="font-bold">{distanceData.duration}</span>
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Kilometer Adjustment */}
+                        <div className="bg-gray-800 p-6 rounded-xl border border-cyan-500/30">
+                            <h3 className="text-xl font-bold text-cyan-400 mb-4">
                                 <Zap className="inline mr-2" size={20} />
-                                Kilometers
+                                Kilometers {distanceData && "(Auto-calculated)"}
                             </h3>
                             <input
                                 type="number"
