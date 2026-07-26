@@ -60,6 +60,9 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
         phone: "",
     });
 
+    const [pricingList, setPricingList] = useState<any[]>([]);
+    const [matchedPricing, setMatchedPricing] = useState<any | null>(null);
+
     // Load location from query param
     useEffect(() => {
         if (router.isReady && locationQuery) {
@@ -124,18 +127,60 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
 
     const locationExamples = getLocationExamples(selectedLocation?.name || "Pune");
 
-    const pricingBreakdown = selectedCar
+    useEffect(() => {
+        // fetch pricing catalog
+        (async () => {
+            try {
+                const res = await fetch('/api/pricing');
+                if (res.ok) setPricingList(await res.json());
+            } catch (e) {
+                console.error('Failed to load pricing list', e);
+            }
+        })();
+    }, []);
+
+    // Recompute matched pricing when selection changes
+    useEffect(() => {
+        if (!selectedCar || !selectedLocation || !pricingList.length) return setMatchedPricing(null);
+
+        // Try to find pricing entries for this car
+        const carId = selectedCar.id;
+        const cityName = (selectedLocation.name || '').toLowerCase();
+
+        const candidates = pricingList.filter(p => p.car?.id === carId);
+        if (!candidates.length) return setMatchedPricing(null);
+
+        // Prefer entries that include the city name in location text
+        const cityCandidates = candidates.filter(p => p.location.toLowerCase().includes(cityName.split(' ')[0]));
+        const useList = cityCandidates.length ? cityCandidates : candidates;
+
+        // If kilometers is known, prefer Local vs Outstation
+        let chosen = null;
+        if (kilometers > 0) {
+            const local = useList.find(p => p.location.toLowerCase().includes('local'));
+            const out = useList.find(p => p.location.toLowerCase().includes('outstation'));
+            if (local && out) {
+                chosen = kilometers <= local.baseKm ? local : out;
+            }
+        }
+
+        if (!chosen) chosen = useList[0];
+        setMatchedPricing(chosen || null);
+    }, [selectedCar, selectedLocation, pricingList, kilometers]);
+
+    const pricingBreakdown = matchedPricing
         ? calculateDynamicPricing({
-            basePrice: selectedCar.baseDayPrice,
+            basePrice: matchedPricing.basePrice,
             kilometers,
-            pricePerKm: 18,
-            baseKm: 30,
-            driverAllowance: 300,
+            pricePerKm: matchedPricing.pricePerKm,
+            baseKm: matchedPricing.baseKm,
+            driverAllowance: matchedPricing.driverAllowance,
             advanceBookingThreshold: 30,
             advanceBookingPercent: 0.3,
             minAdvanceAmount: 3000,
         })
         : null;
+
     const grandTotal = pricingBreakdown ? pricingBreakdown.totalCost : 0;
     const advanceBookingRequired = pricingBreakdown?.advanceBookingRequired || false;
     const advanceBookingAmount = pricingBreakdown?.advanceBookingAmount || 0;
@@ -466,7 +511,7 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
                                         </div>
 
                                         <Pay
-                                            amount={grandTotal}
+                                            amount={advanceBookingRequired ? advanceBookingAmount : grandTotal}
                                             name={contactDetails.name}
                                             email={contactDetails.email}
                                             phone={contactDetails.phone}
@@ -475,7 +520,8 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
                                                 route: selectedLocation?.name || "Trip",
                                                 date: date,
                                                 time: time,
-                                                duration: hours
+                                                duration: hours,
+                                                isAdvance: advanceBookingRequired
                                             }}
                                         />
 
