@@ -1,5 +1,12 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 
+interface DistanceResult {
+    distance: number;
+    duration: string;
+    estimated: boolean;
+    provider?: string;
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method !== 'POST') {
         res.setHeader('Allow', ['POST']);
@@ -12,63 +19,114 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(400).json({ error: 'Origin and destination are required' });
     }
 
-    // Google Maps API key from environment variables
-    const apiKey = process.env.GOOGLE_MAPS_API_KEY;
-
-    if (!apiKey) {
-        // Fallback: Calculate approximate distance based on keywords
-        // This is a basic approximation for demo purposes
-        const approximateDistance = estimateDistance(origin, destination);
-        return res.status(200).json({
-            distance: approximateDistance * 1000, // Convert to meters
-            duration: `${Math.ceil(approximateDistance / 40)} hrs`,
-            estimated: true
-        });
-    }
-
     try {
-        const encodedOrigin = encodeURIComponent(origin);
-        const encodedDestination = encodeURIComponent(destination);
-        
-        const response = await fetch(
-            `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodedOrigin}&destinations=${encodedDestination}&key=${apiKey}`
-        );
+        const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+        const hasValidGoogleKey = Boolean(apiKey && !apiKey.includes('YourGoogleMapsAPIKeyHere'));
 
-        const data = await response.json();
-
-        if (data.status === 'OK' && data.rows[0]?.elements[0]?.status === 'OK') {
-            const element = data.rows[0].elements[0];
-            return res.status(200).json({
-                distance: element.distance.value, // in meters
-                duration: element.duration.text,
-                estimated: false
-            });
-        } else {
-            // Fallback to estimation
-            const approximateDistance = estimateDistance(origin, destination);
-            return res.status(200).json({
-                distance: approximateDistance * 1000,
-                duration: `${Math.ceil(approximateDistance / 40)} hrs`,
-                estimated: true
-            });
+        if (hasValidGoogleKey) {
+            const googleResult = await getDistanceFromGoogleMaps(origin, destination, apiKey as string);
+            if (googleResult) {
+                return res.status(200).json(googleResult);
+            }
         }
+
+        const osmResult = await getDistanceFromOpenStreetMap(origin, destination);
+        return res.status(200).json(osmResult);
     } catch (error) {
         console.error('Distance calculation error:', error);
-        
-        // Fallback estimation
         const approximateDistance = estimateDistance(origin, destination);
         return res.status(200).json({
             distance: approximateDistance * 1000,
             duration: `${Math.ceil(approximateDistance / 40)} hrs`,
-            estimated: true
+            estimated: true,
+            provider: 'fallback'
         });
     }
+}
+
+async function getDistanceFromGoogleMaps(origin: string, destination: string, apiKey: string): Promise<DistanceResult | null> {
+    const encodedOrigin = encodeURIComponent(origin);
+    const encodedDestination = encodeURIComponent(destination);
+
+    const response = await fetch(
+        `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodedOrigin}&destinations=${encodedDestination}&key=${apiKey}`
+    );
+
+    const data = await response.json();
+
+    if (data.status === 'OK' && data.rows?.[0]?.elements?.[0]?.status === 'OK') {
+        const element = data.rows[0].elements[0];
+        return {
+            distance: element.distance.value,
+            duration: element.duration.text,
+            estimated: false,
+            provider: 'google-maps'
+        };
+    }
+
+    return null;
+}
+
+async function getDistanceFromOpenStreetMap(origin: string, destination: string): Promise<DistanceResult> {
+    const headers = { 'User-Agent': 'consistent-cars-app/1.0' };
+
+    const [originResponse, destinationResponse] = await Promise.all([
+        fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=${encodeURIComponent(origin)}`, { headers }),
+        fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=${encodeURIComponent(destination)}`, { headers })
+    ]);
+
+    const [originData, destinationData] = await Promise.all([
+        originResponse.json() as Promise<any[]>,
+        destinationResponse.json() as Promise<any[]>
+    ]);
+
+    const originPoint = originData[0];
+    const destinationPoint = destinationData[0];
+
+    if (!originPoint || !destinationPoint) {
+        throw new Error('Unable to geocode the provided locations');
+    }
+
+    const routeResponse = await fetch(
+        `https://router.project-osrm.org/route/v1/driving/${originPoint.lon},${originPoint.lat};${destinationPoint.lon},${destinationPoint.lat}?overview=false`,
+        { headers: { Accept: 'application/json' } }
+    );
+
+    const routeData = await routeResponse.json();
+    const route = routeData.routes?.[0];
+
+    if (!route) {
+        throw new Error('Unable to calculate route');
+    }
+
+    return {
+        distance: route.distance,
+        duration: formatDuration(route.duration),
+        estimated: false,
+        provider: 'openstreetmap'
+    };
+}
+
+function formatDuration(durationSeconds: number): string {
+    const hours = Math.floor(durationSeconds / 3600);
+    const minutes = Math.ceil((durationSeconds % 3600) / 60);
+    if (hours > 0) {
+        return `${hours} hr ${minutes} min`;
+    }
+    return `${minutes} min`;
 }
 
 // Approximate distance estimation based on common routes
 function estimateDistance(origin: string, destination: string): number {
     const o = origin.toLowerCase();
     const d = destination.toLowerCase();
+
+    const hasNizamuddin = o.includes('nizamuddin') || d.includes('nizamuddin');
+    const hasIndiaGate = o.includes('india gate') || d.includes('india gate');
+    const hasRailwayStation = o.includes('railway station') || d.includes('railway station');
+
+    if (hasNizamuddin && hasIndiaGate) return 20;
+    if ((hasNizamuddin || hasIndiaGate) && hasRailwayStation) return 20;
 
     // Delhi area distances (approximate in km)
     const distances: { [key: string]: number } = {
@@ -106,7 +164,7 @@ function estimateDistance(origin: string, destination: string): number {
     // Check if it looks like outstation (mentions different cities)
     const cities = ['goa', 'jaipur', 'agra', 'shimla', 'manali', 'dehradun', 'haridwar', 'rishikesh', 'mussoorie'];
     const hasOutstationCity = cities.some(city => o.includes(city) || d.includes(city));
-    
+
     if (hasOutstationCity) return distances['default_outstation'];
 
     // Default to local distance

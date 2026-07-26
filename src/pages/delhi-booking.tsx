@@ -5,7 +5,7 @@ import DelhiBooking from "../components/DelhiBooking/DelhiBooking";
 export default function DelhiBookingPage() {
   return (
     <div>
-      <DelhiBooking />
+      <DelhiBooking cityName="Delhi" />
     </div>
   );
 }

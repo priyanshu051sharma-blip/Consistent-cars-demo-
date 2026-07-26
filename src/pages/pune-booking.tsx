@@ -7,7 +7,7 @@ import DelhiBooking from "../components/DelhiBooking/DelhiBooking";
 export default function PuneBookingPage() {
   return (
     <div>
-      <DelhiBooking />
+      <DelhiBooking cityName="Pune" />
     </div>
   );
 }

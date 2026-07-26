@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { MapPin, Car, Zap, Calendar, Clock, User, Mail, Phone } from "lucide-react";
+import { calculateDynamicPricing, getLocationExamples } from "../../utils/pricing";
 
 interface Pricing {
     id: string;
@@ -25,13 +26,19 @@ interface PricingCalculator {
     hours?: number;
 }
 
-const DelhiBooking = () => {
+interface DelhiBookingProps {
+    cityName?: string;
+}
+
+const DelhiBooking = ({ cityName = "Delhi" }: DelhiBookingProps) => {
     const [bookingType, setBookingType] = useState<"local" | "outstation">("local");
     const [selectedCar, setSelectedCar] = useState<string>("");
     const [kilometers, setKilometers] = useState<number>(80);
     const [pricing, setPricing] = useState<Pricing[]>([]);
     const [selectedPricing, setSelectedPricing] = useState<Pricing | null>(null);
     const [totalCost, setTotalCost] = useState<number>(0);
+    const [advanceBookingRequired, setAdvanceBookingRequired] = useState(false);
+    const [advanceBookingAmount, setAdvanceBookingAmount] = useState(0);
 
     const [contactDetails, setContactDetails] = useState({
         name: "",
@@ -50,13 +57,7 @@ const DelhiBooking = () => {
 
     const [calculatingDistance, setCalculatingDistance] = useState(false);
 
-    const delhiLocations = [
-        "Delhi Airport",
-        "Delhi City Center",
-        "Gurgaon",
-        "Noida",
-        "Delhi Station",
-    ];
+    const locationExamples = getLocationExamples(cityName);
 
     useEffect(() => {
         fetchPricing();
@@ -112,11 +113,20 @@ const DelhiBooking = () => {
     };
 
     const calculateCost = (pricingData: Pricing, km: number) => {
-        if (km <= pricingData.baseKm) {
-            return pricingData.basePrice;
-        }
-        const extraKm = km - pricingData.baseKm;
-        return pricingData.basePrice + extraKm * pricingData.pricePerKm;
+        const pricingBreakdown = calculateDynamicPricing({
+            basePrice: pricingData.basePrice,
+            kilometers: km,
+            pricePerKm: pricingData.pricePerKm,
+            baseKm: pricingData.baseKm,
+            driverAllowance: pricingData.driverAllowance,
+            advanceBookingThreshold: 30,
+            advanceBookingPercent: 0.3,
+            minAdvanceAmount: 3000,
+        });
+
+        setAdvanceBookingRequired(pricingBreakdown.advanceBookingRequired);
+        setAdvanceBookingAmount(pricingBreakdown.advanceBookingAmount);
+        return pricingBreakdown.totalCost;
     };
 
     const handleLocationChange = (location: string) => {
@@ -189,8 +199,8 @@ const DelhiBooking = () => {
             pricing
                 .filter((p) =>
                     bookingType === "local"
-                        ? p.location === "Delhi Local"
-                        : p.location === "Delhi Outstation"
+                        ? p.location === `${cityName} Local`
+                        : p.location === `${cityName} Outstation`
                 )
                 .map((p) => [p.car.id, p.car])
         ).values()
@@ -202,10 +212,10 @@ const DelhiBooking = () => {
                 {/* Header */}
                 <div className="text-center mb-12">
                     <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
-                        Delhi Car Rental
+                        {locationExamples.heading}
                     </h1>
                     <p className="text-gray-300 text-lg">
-                        Premium cab service with transparent pricing based on kilometers
+                        Distance-based pricing with advance booking for trips above 30 km.
                     </p>
                 </div>
 
@@ -271,7 +281,7 @@ const DelhiBooking = () => {
                             <div className="space-y-3">
                                 <input
                                     type="text"
-                                    placeholder="Pickup Location (e.g., Delhi Airport)"
+                                    placeholder={locationExamples.pickupPlaceholder}
                                     value={contactDetails.pickupLocation}
                                     onChange={(e) =>
                                         setContactDetails({ ...contactDetails, pickupLocation: e.target.value })
@@ -280,7 +290,7 @@ const DelhiBooking = () => {
                                 />
                                 <input
                                     type="text"
-                                    placeholder="Drop Location (e.g., Connaught Place)"
+                                    placeholder={locationExamples.dropPlaceholder}
                                     value={contactDetails.dropLocation}
                                     onChange={(e) =>
                                         setContactDetails({ ...contactDetails, dropLocation: e.target.value })
@@ -319,6 +329,12 @@ const DelhiBooking = () => {
                             <p className="text-gray-400 text-sm mt-2">
                                 Base: {selectedPricing?.baseKm} km • Extra Rate: ₹{selectedPricing?.pricePerKm}/km
                             </p>
+                            {advanceBookingRequired && (
+                                <div className="mt-3 rounded-lg border border-amber-400/40 bg-amber-500/10 p-3 text-sm text-amber-200">
+                                    <p className="font-semibold">Advance booking required</p>
+                                    <p>Trips above 30 km need a non-refundable advance of ₹{advanceBookingAmount}.</p>
+                                </div>
+                            )}
                         </div>
 
                         {/* Pickup Details */}
@@ -375,8 +391,14 @@ const DelhiBooking = () => {
                                     </div>
                                     <div className="border-t border-white/30 pt-3 flex justify-between text-xl font-bold">
                                         <span>Total Cost:</span>
-                                        <span>₹{totalCost + selectedPricing.driverAllowance}</span>
+                                        <span>₹{totalCost}</span>
                                     </div>
+                                    {advanceBookingRequired && (
+                                        <div className="flex justify-between text-sm text-amber-100">
+                                            <span>Advance (non-refundable):</span>
+                                            <span>₹{advanceBookingAmount}</span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )}

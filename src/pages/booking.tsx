@@ -9,6 +9,7 @@ import "jspdf-autotable";
 import AIChatBot from "../components/AIChabot/AIChatbot";
 import Pay from "../components/Pay/Pay";
 import { useRouter } from "next/router";
+import { calculateDynamicPricing, getLocationExamples } from "../utils/pricing";
 
 type Car = {
     id: string;
@@ -121,12 +122,23 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
     // If no location selected (user browsed here directly), maybe redirect or show dropdown?
     // ideally redirect to services, but let's handle graceful fallback text
 
-    const calculateTotal = (car: Car, hours: number) => {
-        // Calculate days from hours (minimum 1 day charge)
-        const days = Math.ceil(hours / 24);
-        return car.baseDayPrice * days;
-    };
-    const grandTotal = selectedCar ? calculateTotal(selectedCar, hours) : 0;
+    const locationExamples = getLocationExamples(selectedLocation?.name || "Pune");
+
+    const pricingBreakdown = selectedCar
+        ? calculateDynamicPricing({
+            basePrice: selectedCar.baseDayPrice,
+            kilometers,
+            pricePerKm: 18,
+            baseKm: 30,
+            driverAllowance: 300,
+            advanceBookingThreshold: 30,
+            advanceBookingPercent: 0.3,
+            minAdvanceAmount: 3000,
+        })
+        : null;
+    const grandTotal = pricingBreakdown ? pricingBreakdown.totalCost : 0;
+    const advanceBookingRequired = pricingBreakdown?.advanceBookingRequired || false;
+    const advanceBookingAmount = pricingBreakdown?.advanceBookingAmount || 0;
     const isFormValid = contactDetails.name && contactDetails.email && contactDetails.phone && date && time;
 
     const generatePDF = () => {
@@ -261,7 +273,7 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
                                         <label className="text-sm text-slate-400 mb-1 block">Pickup Location</label>
                                         <input
                                             type="text"
-                                            placeholder="e.g., Delhi Airport, Connaught Place"
+                                            placeholder={locationExamples.pickupPlaceholder}
                                             value={pickupLocation}
                                             onChange={(e) => setPickupLocation(e.target.value)}
                                             className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-cyan-500 outline-none"
@@ -271,7 +283,7 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
                                         <label className="text-sm text-slate-400 mb-1 block">Drop Location</label>
                                         <input
                                             type="text"
-                                            placeholder="e.g., Noida, Gurgaon, Hotel Name"
+                                            placeholder={locationExamples.dropPlaceholder}
                                             value={dropLocation}
                                             onChange={(e) => setDropLocation(e.target.value)}
                                             className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-cyan-500 outline-none"
@@ -287,6 +299,16 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
                                         <span className="text-white text-sm">⏱️ Duration: <strong>{distanceData.duration}</strong></span>
                                     </div>
                                 )}
+                                <div className="mt-4">
+                                    <label className="text-sm text-slate-400 mb-1 block">Estimated Distance (km)</label>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        value={kilometers}
+                                        onChange={(e) => setKilometers(Math.max(1, parseInt(e.target.value) || 1))}
+                                        className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-cyan-500 outline-none"
+                                    />
+                                </div>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -369,7 +391,7 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
                                             </label>
                                             <input 
                                                 type="text" 
-                                                placeholder="e.g., Delhi Airport, Connaught Place" 
+                                                placeholder={locationExamples.pickupPlaceholder} 
                                                 value={pickupLocation}
                                                 onChange={(e) => setPickupLocation(e.target.value)} 
                                                 className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-cyan-500 outline-none" 
@@ -382,7 +404,7 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
                                             </label>
                                             <input 
                                                 type="text" 
-                                                placeholder="e.g., Noida, Gurgaon" 
+                                                placeholder={locationExamples.dropPlaceholder} 
                                                 value={dropLocation}
                                                 onChange={(e) => setDropLocation(e.target.value)} 
                                                 className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-cyan-500 outline-none" 
@@ -407,7 +429,18 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
                                                 </div>
                                             </div>
                                         )}
-                                        
+
+                                        <div className="space-y-2">
+                                            <label className="text-sm text-slate-300">Estimated Distance (km)</label>
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                value={kilometers}
+                                                onChange={(e) => setKilometers(Math.max(1, parseInt(e.target.value) || 1))}
+                                                className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-cyan-500 outline-none"
+                                            />
+                                        </div>
+
                                         <input type="number" min="1" value={hours} onChange={(e) => setHours(Math.max(1, parseInt(e.target.value) || 1))} className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-cyan-500 outline-none" placeholder="Duration (Hours)" />
                                         
                                         <div className="border-t border-white/10 my-2" />
@@ -424,7 +457,11 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
                                         <p className="text-4xl font-bold mb-6">₹{grandTotal.toLocaleString()}</p>
 
                                         <div className="space-y-2 text-sm text-cyan-100 mb-6">
+                                            <div className="flex justify-between"><span>Distance</span><span>{kilometers} km</span></div>
                                             <div className="flex justify-between"><span>Duration</span><span>{hours} Hours</span></div>
+                                            {advanceBookingRequired && (
+                                                <div className="flex justify-between text-amber-100"><span>Advance (non-refundable)</span><span>₹{advanceBookingAmount}</span></div>
+                                            )}
                                             <div className="flex justify-between border-t border-white/20 pt-2 font-bold text-white"><span>Total</span><span>₹{grandTotal}</span></div>
                                         </div>
 
