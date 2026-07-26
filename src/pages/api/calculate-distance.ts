@@ -70,9 +70,11 @@ async function getDistanceFromGoogleMaps(origin: string, destination: string, ap
 async function getDistanceFromOpenStreetMap(origin: string, destination: string): Promise<DistanceResult> {
     const headers = { 'User-Agent': 'consistent-cars-app/1.0' };
 
+    // Fetch multiple candidates for both origin and destination so we can pick
+    // the closest pair of geocoded points (avoids ambiguous place-name mismatches)
     const [originResponse, destinationResponse] = await Promise.all([
-        fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=${encodeURIComponent(origin)}`, { headers }),
-        fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=${encodeURIComponent(destination)}`, { headers })
+        fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&addressdetails=1&countrycodes=in&q=${encodeURIComponent(origin)}`, { headers }),
+        fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&addressdetails=1&countrycodes=in&q=${encodeURIComponent(destination)}`, { headers })
     ]);
 
     const [originData, destinationData] = await Promise.all([
@@ -80,12 +82,25 @@ async function getDistanceFromOpenStreetMap(origin: string, destination: string)
         destinationResponse.json() as Promise<any[]>
     ]);
 
-    const originPoint = originData[0];
-    const destinationPoint = destinationData[0];
-
-    if (!originPoint || !destinationPoint) {
+    if (!originData.length || !destinationData.length) {
         throw new Error('Unable to geocode the provided locations');
     }
+
+    // Choose the pair (o,d) with the smallest haversine distance between candidates.
+    let bestPair: { o: any; d: any; dist: number } | null = null;
+    for (const o of originData) {
+        for (const d of destinationData) {
+            const dist = haversineDistance(Number(o.lat), Number(o.lon), Number(d.lat), Number(d.lon));
+            if (!bestPair || dist < bestPair.dist) {
+                bestPair = { o, d, dist };
+            }
+        }
+    }
+
+    if (!bestPair) throw new Error('No valid geocode pair found');
+
+    const originPoint = bestPair.o;
+    const destinationPoint = bestPair.d;
 
     const routeResponse = await fetch(
         `https://router.project-osrm.org/route/v1/driving/${originPoint.lon},${originPoint.lat};${destinationPoint.lon},${destinationPoint.lat}?overview=false`,
@@ -105,6 +120,19 @@ async function getDistanceFromOpenStreetMap(origin: string, destination: string)
         estimated: false,
         provider: 'openstreetmap'
     };
+}
+
+// Haversine distance returns kilometers between two lat/lon points
+function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
+    const toRad = (v: number) => (v * Math.PI) / 180;
+    const R = 6371; // km
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
 }
 
 function formatDuration(durationSeconds: number): string {
