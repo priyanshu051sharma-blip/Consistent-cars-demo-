@@ -11,6 +11,22 @@ import Pay from "../components/Pay/Pay";
 import { useRouter } from "next/router";
 import { calculateDynamicPricing, getLocationExamples } from "../utils/pricing";
 
+const getDemandMultiplier = (tripDate: string, tripTime: string) => {
+    if (!tripDate) return 1;
+
+    const [year, month, day] = tripDate.split('-').map(Number);
+    const [hours = 0, minutes = 0] = (tripTime || "00:00").split(':').map(Number);
+    const parsedDate = new Date(year, month - 1, day, hours, minutes);
+    const dayOfWeek = parsedDate.getDay();
+    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+    const rushHour = (hours >= 7 && hours <= 10) || (hours >= 17 && hours <= 20);
+
+    if (isWeekend) return 1.2;
+    if (rushHour) return 1.3;
+    if (hours >= 22 || hours <= 5) return 1.2;
+    return 1;
+};
+
 type Car = {
     id: string;
     name: string;
@@ -111,15 +127,51 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
                 setDistanceData(data);
                 const distanceInKm = Math.ceil(data.distance / 1000);
                 setKilometers(distanceInKm);
-                // Estimate hours based on distance (assuming 40 km/hr average)
-                const estimatedHours = Math.ceil(distanceInKm / 40);
-                setHours(Math.max(1, estimatedHours));
+                setHours(parseDurationToHours(data.duration, distanceInKm));
             }
         } catch (error) {
             console.error("Failed to calculate distance:", error);
         } finally {
             setCalculatingDistance(false);
         }
+    };
+
+    const parseDurationToHours = (duration: string, distanceInKm: number) => {
+        const hoursMatch = duration.match(/(\d+)\s*hr/);
+        const minutesMatch = duration.match(/(\d+)\s*min/);
+        const hours = hoursMatch ? parseInt(hoursMatch[1], 10) : 0;
+        const minutes = minutesMatch ? parseInt(minutesMatch[1], 10) : 0;
+
+        if (hours > 0) {
+            return hours + (minutes > 0 ? 1 : 0);
+        }
+
+        if (minutes > 0) {
+            return 1;
+        }
+
+        if (distanceInKm > 0) {
+            return Math.max(1, Math.ceil(distanceInKm / 40));
+        }
+
+        return 1;
+    };
+
+    const parseDurationToMinutes = (duration: string, distanceInKm: number) => {
+        const hoursMatch = duration.match(/(\d+)\s*hr/);
+        const minutesMatch = duration.match(/(\d+)\s*min/);
+        const hours = hoursMatch ? parseInt(hoursMatch[1], 10) : 0;
+        const minutes = minutesMatch ? parseInt(minutesMatch[1], 10) : 0;
+
+        if (hours > 0 || minutes > 0) {
+            return hours * 60 + minutes;
+        }
+
+        if (distanceInKm > 0) {
+            return Math.max(30, Math.ceil(distanceInKm * 1.5));
+        }
+
+        return 60;
     };
 
     // If no location selected (user browsed here directly), maybe redirect or show dropdown?
@@ -172,9 +224,16 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
         ? calculateDynamicPricing({
             basePrice: matchedPricing.basePrice,
             kilometers,
+            minutes: distanceData ? parseDurationToMinutes(distanceData.duration, kilometers) : 60,
+            vehicleType: selectedCar?.type || selectedCar?.name,
             pricePerKm: matchedPricing.pricePerKm,
+            pricePerMinute: matchedPricing.extraHourRate ? matchedPricing.extraHourRate / 60 : undefined,
             baseKm: matchedPricing.baseKm,
             driverAllowance: matchedPricing.driverAllowance,
+            surgeMultiplier: getDemandMultiplier(date, time),
+            platformFee: 15,
+            taxRate: 0.12,
+            discounts: 0,
             advanceBookingThreshold: 30,
             advanceBookingPercent: 0.3,
             minAdvanceAmount: 3000,
@@ -504,6 +563,12 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
                                         <div className="space-y-2 text-sm text-cyan-100 mb-6">
                                             <div className="flex justify-between"><span>Distance</span><span>{kilometers} km</span></div>
                                             <div className="flex justify-between"><span>Duration</span><span>{hours} Hours</span></div>
+                                            {pricingBreakdown?.breakdown.map((entry) => (
+                                                <div key={entry.label} className="flex justify-between text-cyan-50/90">
+                                                    <span>{entry.label}</span>
+                                                    <span>₹{entry.amount.toFixed(2)}</span>
+                                                </div>
+                                            ))}
                                             {advanceBookingRequired && (
                                                 <div className="flex justify-between text-amber-100"><span>Advance (non-refundable)</span><span>₹{advanceBookingAmount}</span></div>
                                             )}

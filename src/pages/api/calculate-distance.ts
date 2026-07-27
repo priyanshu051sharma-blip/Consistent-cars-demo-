@@ -12,6 +12,13 @@ interface NormalizedLocation {
     destination: string;
 }
 
+interface GoogleGeocodeResult {
+    place_id: string;
+    formatted_address: string;
+    lat: number;
+    lng: number;
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method !== 'POST') {
         res.setHeader('Allow', ['POST']);
@@ -25,14 +32,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     try {
-        const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+        const apiKey = process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
         const hasValidGoogleKey = Boolean(apiKey && !apiKey.includes('YourGoogleMapsAPIKeyHere'));
         const normalizedLocations = await normalizeLocations(origin, destination);
         const finalOrigin = normalizedLocations?.origin ?? origin;
         const finalDestination = normalizedLocations?.destination ?? destination;
 
         if (hasValidGoogleKey) {
-            const googleResult = await getDistanceFromGoogleDirections(finalOrigin, finalDestination, apiKey as string);
+            const geocodedOrigin = await geocodeAddress(finalOrigin, apiKey as string);
+            const geocodedDestination = await geocodeAddress(finalDestination, apiKey as string);
+            const googleResult = await getDistanceFromGoogleDirections(geocodedOrigin, geocodedDestination, apiKey as string);
             if (googleResult) {
                 return res.status(200).json(googleResult);
             }
@@ -118,6 +127,25 @@ async function normalizeWithOpenAI(origin: string, destination: string, apiKey: 
     }
 }
 
+async function geocodeAddress(address: string, apiKey: string): Promise<GoogleGeocodeResult> {
+    const encodedAddress = encodeURIComponent(address);
+    const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodedAddress}&key=${apiKey}`;
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (data.status !== 'OK' || !Array.isArray(data.results) || data.results.length === 0) {
+        throw new Error(`Geocoding failed for address: ${address}`);
+    }
+
+    const bestResult = data.results[0];
+    return {
+        place_id: bestResult.place_id,
+        formatted_address: bestResult.formatted_address,
+        lat: bestResult.geometry.location.lat,
+        lng: bestResult.geometry.location.lng
+    };
+}
+
 function parseNormalizedLocation(text: string): NormalizedLocation | null {
     const trimmed = text.trim();
     try {
@@ -142,11 +170,11 @@ function parseNormalizedLocation(text: string): NormalizedLocation | null {
 }
 
 // Use the Directions API for a route-aware driving distance and duration.
-async function getDistanceFromGoogleDirections(origin: string, destination: string, apiKey: string): Promise<DistanceResult | null> {
-    const encodedOrigin = encodeURIComponent(origin);
-    const encodedDestination = encodeURIComponent(destination);
+async function getDistanceFromGoogleDirections(origin: string | GoogleGeocodeResult, destination: string | GoogleGeocodeResult, apiKey: string): Promise<DistanceResult | null> {
+    const originParam = typeof origin === 'string' ? encodeURIComponent(origin) : `place_id:${origin.place_id}`;
+    const destinationParam = typeof destination === 'string' ? encodeURIComponent(destination) : `place_id:${destination.place_id}`;
 
-    const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${encodedOrigin}&destination=${encodedDestination}&mode=driving&key=${apiKey}`;
+    const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${originParam}&destination=${destinationParam}&mode=driving&key=${apiKey}`;
     const response = await fetch(url);
     const data = await response.json();
 

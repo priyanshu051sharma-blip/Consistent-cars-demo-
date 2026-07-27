@@ -2,6 +2,22 @@ import React, { useState, useEffect } from "react";
 import { MapPin, Car, Zap, Calendar, Clock, User, Mail, Phone } from "lucide-react";
 import { calculateDynamicPricing, getLocationExamples } from "../../utils/pricing";
 
+const getDemandMultiplier = (tripDate: string, tripTime: string) => {
+    if (!tripDate) return 1;
+
+    const [year, month, day] = tripDate.split('-').map(Number);
+    const [hours = 0, minutes = 0] = (tripTime || "00:00").split(':').map(Number);
+    const parsedDate = new Date(year, month - 1, day, hours, minutes);
+    const dayOfWeek = parsedDate.getDay();
+    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+    const rushHour = (hours >= 7 && hours <= 10) || (hours >= 17 && hours <= 20);
+
+    if (isWeekend) return 1.2;
+    if (rushHour) return 1.3;
+    if (hours >= 22 || hours <= 5) return 1.2;
+    return 1;
+};
+
 interface Pricing {
     id: string;
     location: string;
@@ -116,9 +132,16 @@ const DelhiBooking = ({ cityName = "Delhi" }: DelhiBookingProps) => {
         const pricingBreakdown = calculateDynamicPricing({
             basePrice: pricingData.basePrice,
             kilometers: km,
+            minutes: distanceData ? parseDurationToMinutes(distanceData.duration, km) : 60,
+            vehicleType: pricingData.car?.type || pricingData.car?.name,
             pricePerKm: pricingData.pricePerKm,
+            pricePerMinute: pricingData.extraHourRate ? pricingData.extraHourRate / 60 : undefined,
             baseKm: pricingData.baseKm,
             driverAllowance: pricingData.driverAllowance,
+            surgeMultiplier: getDemandMultiplier(contactDetails.date, contactDetails.time),
+            platformFee: 15,
+            taxRate: 0.12,
+            discounts: 0,
             advanceBookingThreshold: 30,
             advanceBookingPercent: 0.3,
             minAdvanceAmount: 3000,
@@ -167,6 +190,23 @@ const DelhiBooking = ({ cityName = "Delhi" }: DelhiBookingProps) => {
         if (selectedCar) {
             handleCarChange(selectedCar);
         }
+    };
+
+    const parseDurationToMinutes = (duration: string, distanceKm: number) => {
+        const hoursMatch = duration.match(/(\d+)\s*hr/);
+        const minutesMatch = duration.match(/(\d+)\s*min/);
+        const hours = hoursMatch ? parseInt(hoursMatch[1], 10) : 0;
+        const minutes = minutesMatch ? parseInt(minutesMatch[1], 10) : 0;
+
+        if (hours > 0 || minutes > 0) {
+            return hours * 60 + minutes;
+        }
+
+        if (distanceKm > 0) {
+            return Math.max(30, Math.ceil(distanceKm * 1.5));
+        }
+
+        return 60;
     };
 
     const handlePayment = async () => {
@@ -371,28 +411,36 @@ const DelhiBooking = ({ cityName = "Delhi" }: DelhiBookingProps) => {
                             <div className="bg-gradient-to-br from-cyan-600 to-blue-600 p-6 rounded-xl text-white">
                                 <h3 className="text-2xl font-bold mb-6">Pricing Breakdown</h3>
                                 <div className="space-y-3 mb-6">
-                                    <div className="flex justify-between">
-                                        <span>Base Price ({selectedPricing.baseKm} km):</span>
-                                        <span>₹{selectedPricing.basePrice}</span>
-                                    </div>
-                                    {kilometers > selectedPricing.baseKm && (
-                                        <div className="flex justify-between">
-                                            <span>
-                                                Extra Km ({kilometers - selectedPricing.baseKm} km @ ₹{selectedPricing.pricePerKm}/km):
-                                            </span>
-                                            <span>
-                                                ₹{(kilometers - selectedPricing.baseKm) * selectedPricing.pricePerKm}
-                                            </span>
-                                        </div>
-                                    )}
-                                    <div className="flex justify-between">
-                                        <span>Driver Allowance:</span>
-                                        <span>₹{selectedPricing.driverAllowance}</span>
-                                    </div>
-                                    <div className="border-t border-white/30 pt-3 flex justify-between text-xl font-bold">
-                                        <span>Total Cost:</span>
-                                        <span>₹{totalCost}</span>
-                                    </div>
+                                    {(() => {
+                                        const breakdown = calculateDynamicPricing({
+                                            basePrice: selectedPricing.basePrice,
+                                            kilometers,
+                                            minutes: distanceData ? parseDurationToMinutes(distanceData.duration, kilometers) : 60,
+                                            vehicleType: selectedPricing.car?.type || selectedPricing.car?.name,
+                                            pricePerKm: selectedPricing.pricePerKm,
+                                            pricePerMinute: selectedPricing.extraHourRate ? selectedPricing.extraHourRate / 60 : undefined,
+                                            baseKm: selectedPricing.baseKm,
+                                            driverAllowance: selectedPricing.driverAllowance,
+                                            surgeMultiplier: getDemandMultiplier(contactDetails.date, contactDetails.time),
+                                            platformFee: 15,
+                                            taxRate: 0.12,
+                                            discounts: 0,
+                                        });
+                                        return (
+                                            <>
+                                                {breakdown.breakdown.map((entry) => (
+                                                    <div key={entry.label} className="flex justify-between text-sm">
+                                                        <span>{entry.label}</span>
+                                                        <span>₹{entry.amount.toFixed(2)}</span>
+                                                    </div>
+                                                ))}
+                                                <div className="border-t border-white/30 pt-3 flex justify-between text-xl font-bold">
+                                                    <span>Total Cost:</span>
+                                                    <span>₹{breakdown.totalCost.toFixed(2)}</span>
+                                                </div>
+                                            </>
+                                        );
+                                    })()}
                                     {advanceBookingRequired && (
                                         <div className="flex justify-between text-sm text-amber-100">
                                             <span>Advance (non-refundable):</span>
