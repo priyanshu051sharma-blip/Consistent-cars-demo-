@@ -112,12 +112,52 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
         }
     }, [pickupLocation, dropLocation]);
 
+    const commonPlaceSuggestions: string[] = [
+        'Pune Airport',
+        'Baner',
+        'Kharadi',
+        'Viman Nagar',
+        'Hinjewadi',
+        'Aundh',
+        'Koregaon Park',
+        'Shivaji Nagar',
+        'Connaught Place',
+        'India Gate',
+        'Gurgaon',
+        'Noida',
+        'Indira Gandhi Airport',
+        'Delhi Airport',
+        'MGF Metropolitan Mall',
+        'DLF Mega Mall',
+        'Pacific Mall',
+    ];
+
     const getMatchingSuggestions = (query: string, excludeName?: string) => {
         if (!query.trim()) return [] as Location[];
         const lower = query.toLowerCase();
-        return locations
+
+        const locationMatches = locations
             .filter(loc => loc.name.toLowerCase().includes(lower) && loc.name.toLowerCase() !== excludeName?.toLowerCase())
-            .slice(0, 5);
+            .slice(0, 5)
+            .map(loc => ({ ...loc }));
+
+        const extraMatches = commonPlaceSuggestions
+            .filter(item => item.toLowerCase().includes(lower) && item.toLowerCase() !== excludeName?.toLowerCase())
+            .slice(0, 5)
+            .map((name, index) => ({ id: `common-${index}-${name}`, name, image: '', description: '' }));
+
+        const combined = [...locationMatches, ...extraMatches];
+        const unique = Array.from(new Map(combined.map(item => [item.name.toLowerCase(), item])).values());
+        return unique.slice(0, 6);
+    };
+
+    const inferLocationNameFromInputs = (pickup: string, drop: string) => {
+        const combined = `${pickup} ${drop}`.toLowerCase();
+        if (/pune|baner|kharadi|viman nagar|hinjewadi|aundh|koregaon park|shivaji nagar/.test(combined)) return 'Pune';
+        if (/delhi|new delhi|gurgaon|gurugram|noida|india gate|connaught place|indira gandhi airport|delhi airport/.test(combined)) return 'Delhi';
+        if (/goa/.test(combined)) return 'Goa';
+        if (/mahaba|ratnagiri|aurangabad|sindhudurg/.test(combined)) return 'Pune';
+        return '';
     };
 
     const handlePickupLocationChange = (value: string) => {
@@ -239,11 +279,13 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
 
     // Recompute matched pricing when selection changes
     useEffect(() => {
-        if (!selectedCar || !selectedLocation || !pricingList.length) return setMatchedPricing(null);
+        const inferredLocationName = inferLocationNameFromInputs(pickupLocation, dropLocation);
+        const effectiveLocationName = selectedLocation?.name || inferredLocationName;
+        if (!selectedCar || !effectiveLocationName || !pricingList.length) return setMatchedPricing(null);
 
         // Try to find pricing entries for this car
         const carId = selectedCar.id;
-        const cityName = (selectedLocation.name || '').toLowerCase();
+        const cityName = effectiveLocationName.toLowerCase();
 
         const candidates = pricingList.filter(p => p.car?.id === carId);
         if (!candidates.length) return setMatchedPricing(null);
@@ -289,7 +331,9 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
     const grandTotal = pricingBreakdown ? pricingBreakdown.totalCost : 0;
     const advanceBookingRequired = pricingBreakdown?.advanceBookingRequired || false;
     const advanceBookingAmount = pricingBreakdown?.advanceBookingAmount || 0;
-    const isFormValid = contactDetails.name && contactDetails.email && contactDetails.phone && date && time;
+    const paymentAmount = advanceBookingRequired ? advanceBookingAmount : grandTotal;
+    const isFormValid = Boolean(contactDetails.name && contactDetails.email && contactDetails.phone && date && time && pickupLocation && dropLocation);
+    const canPay = Boolean(pricingBreakdown && paymentAmount > 0 && distanceData && isFormValid);
 
     const generatePDF = () => {
         if (!selectedCar || !selectedLocation || !isFormValid) return;
@@ -576,7 +620,7 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
                                         </div>
                                         
                                         <div className="border-t border-white/10 my-2" />
-                                        <div className="space-y-2">
+                                        <div className="space-y-2 relative">
                                             <label className="text-sm text-slate-300 flex items-center gap-2">
                                                 <MapPin size={16} className="text-cyan-400" />
                                                 Pickup Location
@@ -585,11 +629,27 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
                                                 type="text" 
                                                 placeholder={locationExamples.pickupPlaceholder} 
                                                 value={pickupLocation}
-                                                onChange={(e) => setPickupLocation(e.target.value)} 
+                                                onChange={(e) => handlePickupLocationChange(e.target.value)} 
+                                                onFocus={() => setShowPickupSuggestions(true)}
+                                                onBlur={() => setTimeout(() => setShowPickupSuggestions(false), 150)}
                                                 className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-cyan-500 outline-none" 
                                             />
+                                            {showPickupSuggestions && pickupSuggestions.length > 0 && (
+                                                <div className="absolute z-20 top-full left-0 right-0 mt-2 rounded-2xl bg-slate-950/95 border border-white/10 shadow-2xl overflow-hidden">
+                                                    {pickupSuggestions.map((suggestion) => (
+                                                        <button
+                                                            key={suggestion.id}
+                                                            type="button"
+                                                            onMouseDown={() => selectPickupSuggestion(suggestion.name)}
+                                                            className="w-full text-left px-4 py-3 hover:bg-cyan-500/10 text-slate-100"
+                                                        >
+                                                            {suggestion.name}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
-                                        <div className="space-y-2">
+                                        <div className="space-y-2 relative">
                                             <label className="text-sm text-slate-300 flex items-center gap-2">
                                                 <MapPin size={16} className="text-cyan-400" />
                                                 Drop Location
@@ -598,9 +658,25 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
                                                 type="text" 
                                                 placeholder={locationExamples.dropPlaceholder} 
                                                 value={dropLocation}
-                                                onChange={(e) => setDropLocation(e.target.value)} 
+                                                onChange={(e) => handleDropLocationChange(e.target.value)} 
+                                                onFocus={() => setShowDropSuggestions(true)}
+                                                onBlur={() => setTimeout(() => setShowDropSuggestions(false), 150)}
                                                 className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-cyan-500 outline-none" 
                                             />
+                                            {showDropSuggestions && dropSuggestions.length > 0 && (
+                                                <div className="absolute z-20 top-full left-0 right-0 mt-2 rounded-2xl bg-slate-950/95 border border-white/10 shadow-2xl overflow-hidden">
+                                                    {dropSuggestions.map((suggestion) => (
+                                                        <button
+                                                            key={suggestion.id}
+                                                            type="button"
+                                                            onMouseDown={() => selectDropSuggestion(suggestion.name)}
+                                                            className="w-full text-left px-4 py-3 hover:bg-cyan-500/10 text-slate-100"
+                                                        >
+                                                            {suggestion.name}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
 
                                         {calculatingDistance && (
@@ -663,15 +739,15 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
                                             <div className="flex justify-between border-t border-white/20 pt-2 font-bold text-white"><span>Total</span><span>₹{grandTotal}</span></div>
                                         </div>
 
-                                        {(isFormValid && pricingBreakdown && (advanceBookingRequired ? advanceBookingAmount : grandTotal) > 0) ? (
+                                        {canPay ? (
                                             <Pay
-                                                amount={advanceBookingRequired ? advanceBookingAmount : grandTotal}
+                                                amount={paymentAmount}
                                                 name={contactDetails.name}
                                                 email={contactDetails.email}
                                                 phone={contactDetails.phone}
                                                 bookingDetails={{
                                                     vehicle: selectedCar?.name || "Premium Car",
-                                                    route: selectedLocation?.name || "Trip",
+                                                    route: pickupLocation && dropLocation ? `${pickupLocation} → ${dropLocation}` : selectedLocation?.name || "Trip",
                                                     date: date,
                                                     time: time,
                                                     duration: hours,
@@ -684,7 +760,7 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
                                                 disabled
                                                 className="w-full rounded-xl bg-slate-700 px-6 py-4 text-white font-semibold opacity-50"
                                             >
-                                                Confirm & Pay ₹0
+                                                {pricingBreakdown ? `Confirm & Pay ₹${paymentAmount.toLocaleString()}` : 'Confirm & Pay ₹0'}
                                             </button>
                                         )}
 
