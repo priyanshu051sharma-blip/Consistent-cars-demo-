@@ -31,10 +31,10 @@ export interface VehiclePricingTier {
 }
 
 export const vehiclePricingTiers: Record<string, VehiclePricingTier> = {
-  bike: { name: "Bike", baseFare: 25, pricePerKm: 8, pricePerMinute: 1, minimumFare: 40 },
-  mini: { name: "Mini", baseFare: 50, pricePerKm: 12, pricePerMinute: 2, minimumFare: 90 },
-  sedan: { name: "Sedan", baseFare: 80, pricePerKm: 16, pricePerMinute: 2.5, minimumFare: 150 },
-  suv: { name: "SUV", baseFare: 120, pricePerKm: 20, pricePerMinute: 3, minimumFare: 250 },
+  bike: { name: "Bike", baseFare: 28, pricePerKm: 7.5, pricePerMinute: 0.9, minimumFare: 45 },
+  mini: { name: "Mini", baseFare: 65, pricePerKm: 11, pricePerMinute: 1.8, minimumFare: 120 },
+  sedan: { name: "Sedan", baseFare: 75, pricePerKm: 14, pricePerMinute: 2.2, minimumFare: 180 },
+  suv: { name: "SUV", baseFare: 110, pricePerKm: 18, pricePerMinute: 2.8, minimumFare: 220 },
 };
 
 function roundCurrency(value: number) {
@@ -97,15 +97,27 @@ export function calculateDynamicPricing({
   const normalizedMinutes = Math.max(0, Math.round(minutes || 0));
   const ratePerKm = pricePerKm ?? vehicleTier.pricePerKm;
   const ratePerMinute = pricePerMinute ?? vehicleTier.pricePerMinute;
-  const baseFare = basePrice ?? vehicleTier.baseFare;
-  const distanceCharge = normalizedKm * ratePerKm;
-  const timeCharge = normalizedMinutes * ratePerMinute;
+  const packageDurationMinutes = 480; // 8 hours package assumption
+  const isPackageTrip = normalizedKm > baseKm || normalizedMinutes > packageDurationMinutes;
+  const localShortTrip = !isPackageTrip && normalizedKm <= 40 && normalizedMinutes <= 90;
+  const packageBasePrice = basePrice ?? vehicleTier.baseFare;
+  const baseFare = isPackageTrip ? packageBasePrice : vehicleTier.baseFare;
+  const distanceCharge = isPackageTrip
+    ? Math.max(normalizedKm - baseKm, 0) * ratePerKm
+    : normalizedKm * ratePerKm;
+  const timeCharge = isPackageTrip
+    ? Math.max(normalizedMinutes - packageDurationMinutes, 0) * ratePerMinute
+    : normalizedMinutes * ratePerMinute;
   const extraKm = Math.max(normalizedKm - baseKm, 0);
   const extraCharge = extraKm * ratePerKm;
   const subtotal = baseFare + distanceCharge + timeCharge;
   const normalizedSurge = Math.max(1, surgeMultiplier || 1);
   const surgeAmount = subtotal * (normalizedSurge - 1);
-  const totalBeforeTax = subtotal + surgeAmount + tollCharges + airportParkingFee + platformFee + driverAllowance;
+  const localPlatformFee = localShortTrip ? Math.min(platformFee, 10) : platformFee;
+  const localDriverAllowance = localShortTrip ? Math.min(driverAllowance, 75) : driverAllowance;
+  const driverAllowanceToUse = isPackageTrip ? driverAllowance : localDriverAllowance;
+  const usedPlatformFee = isPackageTrip ? platformFee : localPlatformFee;
+  const totalBeforeTax = subtotal + surgeAmount + tollCharges + airportParkingFee + usedPlatformFee + driverAllowanceToUse;
   const effectiveTaxRate = taxRate ?? (taxes ?? 0);
   const taxAmount = totalBeforeTax * effectiveTaxRate;
   const discountAmount = Math.max(0, discounts || 0);
