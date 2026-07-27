@@ -204,26 +204,55 @@ async function getDistanceFromGoogleDirections(origin: string | GoogleGeocodeRes
 async function getDistanceFromOpenStreetMap(origin: string, destination: string): Promise<DistanceResult> {
     const headers = { 'User-Agent': 'consistent-cars-app/1.0' };
 
-    // Fetch multiple candidates for both origin and destination so we can pick
-    // the closest pair of geocoded points (avoids ambiguous place-name mismatches)
-    const [originResponse, destinationResponse] = await Promise.all([
-        fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&addressdetails=1&countrycodes=in&q=${encodeURIComponent(origin)}`, { headers }),
-        fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&addressdetails=1&countrycodes=in&q=${encodeURIComponent(destination)}`, { headers })
-    ]);
-
-    const [originData, destinationData] = await Promise.all([
-        originResponse.json() as Promise<any[]>,
-        destinationResponse.json() as Promise<any[]>
-    ]);
+    const originData = await fetchLocationCandidates(origin, headers);
+    const destinationData = await fetchLocationCandidates(destination, headers);
 
     if (!originData.length || !destinationData.length) {
         throw new Error('Unable to geocode the provided locations');
     }
 
-    // Choose the pair (o,d) with the smallest haversine distance between candidates.
+    const originCandidates = selectTopCandidates(originData, 3);
+    const destinationCandidates = selectTopCandidates(destinationData, 3);
+
+    let bestRoute: { distance: number; duration: number; provider: string } | null = null;
+
+    for (const o of originCandidates) {
+        for (const d of destinationCandidates) {
+            try {
+                const routeResponse = await fetch(
+                    `https://router.project-osrm.org/route/v1/driving/${o.lon},${o.lat};${d.lon},${d.lat}?overview=false`,
+                    { headers: { Accept: 'application/json' } }
+                );
+                const routeData = await routeResponse.json();
+                const route = routeData.routes?.[0];
+                if (route && route.distance > 0) {
+                    if (!bestRoute || route.distance < bestRoute.distance) {
+                        bestRoute = {
+                            distance: route.distance,
+                            duration: route.duration,
+                            provider: 'openstreetmap'
+                        };
+                    }
+                }
+            } catch (error) {
+                // Ignore a single route failure and continue with other candidate pairs.
+            }
+        }
+    }
+
+    if (bestRoute) {
+        return {
+            distance: bestRoute.distance,
+            duration: formatDuration(bestRoute.duration),
+            estimated: false,
+            provider: bestRoute.provider
+        };
+    }
+
+    // If actual routing fails for all candidate pairs, fall back to the closest pair by straight-line distance.
     let bestPair: { o: any; d: any; dist: number } | null = null;
-    for (const o of originData) {
-        for (const d of destinationData) {
+    for (const o of originCandidates) {
+        for (const d of destinationCandidates) {
             const dist = haversineDistance(Number(o.lat), Number(o.lon), Number(d.lat), Number(d.lon));
             if (!bestPair || dist < bestPair.dist) {
                 bestPair = { o, d, dist };
@@ -233,11 +262,8 @@ async function getDistanceFromOpenStreetMap(origin: string, destination: string)
 
     if (!bestPair) throw new Error('No valid geocode pair found');
 
-    const originPoint = bestPair.o;
-    const destinationPoint = bestPair.d;
-
     const routeResponse = await fetch(
-        `https://router.project-osrm.org/route/v1/driving/${originPoint.lon},${originPoint.lat};${destinationPoint.lon},${destinationPoint.lat}?overview=false`,
+        `https://router.project-osrm.org/route/v1/driving/${bestPair.o.lon},${bestPair.o.lat};${bestPair.d.lon},${bestPair.d.lat}?overview=false`,
         { headers: { Accept: 'application/json' } }
     );
 
@@ -254,6 +280,86 @@ async function getDistanceFromOpenStreetMap(origin: string, destination: string)
         estimated: false,
         provider: 'openstreetmap'
     };
+}
+
+async function fetchLocationCandidates(location: string, headers: Record<string, string>): Promise<any[]> {
+    const queries = buildLocationSearchVariants(location);
+    for (const query of queries) {
+        for (const useCountry of [true, false]) {
+            try {
+                const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=8&addressdetails=1${useCountry ? '&countrycodes=in' : ''}&q=${encodeURIComponent(query)}`;
+                const response = await fetch(url, { headers });
+                const data = (await response.json()) as any[];
+                if (Array.isArray(data) && data.length > 0) {
+                    return data;
+                }
+            } catch (error) {
+                console.warn(`Geocoding query failed for '${query}' (country=${useCountry}):`, error);
+            }
+        }
+    }
+    return [];
+}
+
+function buildLocationSearchVariants(location: string): string[] {
+    const normalized = location.trim();
+    const lower = normalized.toLowerCase();
+    const variants = [normalized];
+
+    const commonRewrites: Array<[RegExp, string]> = [
+        [/\bcp\b/, 'Connaught Place, New Delhi, India'],
+        [/\bconnaught place\b/, 'Connaught Place, New Delhi, India'],
+        [/\bspecific mall\b/, 'Pacific Mall'],
+        [/\bmgf metro\b/, 'MGF Metropolitan Mall'],
+        [/\bmgf metropolitan mall\b/, 'MGF Metropolitan Mall'],
+        [/\bmega mall\b/, 'DLF Mega Mall'],
+        [/\bpune airport\b/, 'Pune International Airport, Pune, India'],
+        [/\bindira gandhi airport\b/, 'Indira Gandhi International Airport, New Delhi, India'],
+        [/\bdelhi airport\b/, 'Indira Gandhi International Airport, New Delhi, India'],
+    ];
+
+    commonRewrites.forEach(([pattern, replacement]) => {
+        if (pattern.test(lower)) {
+            variants.unshift(replacement);
+            variants.push(`${replacement}, India`);
+        }
+    });
+
+    if (lower.includes('gurgaon') || lower.includes('gurugram')) {
+        variants.push('Gurgaon, Haryana, India');
+        variants.push('Gurugram, Haryana, India');
+    }
+
+    if (lower.includes('noida')) {
+        variants.push('Noida, Uttar Pradesh, India');
+    }
+
+    if (lower.includes('delhi') || lower.includes('new delhi')) {
+        variants.push('New Delhi, Delhi, India');
+    }
+
+    if (lower.includes('pune')) {
+        variants.push('Pune, Maharashtra, India');
+    }
+
+    if (lower.includes('mall') && /(gurgaon|gurugram)/.test(lower)) {
+        variants.push('Pacific Mall, Gurgaon, India');
+        variants.push('MGF Metropolitan Mall, Gurgaon, India');
+        variants.push('DLF Mega Mall, Gurgaon, India');
+    }
+
+    if (!lower.includes('india')) {
+        variants.push(`${normalized}, India`);
+    }
+
+    return Array.from(new Set(variants)).slice(0, 8);
+}
+
+function selectTopCandidates(items: any[], limit = 3) {
+    return items
+        .slice()
+        .sort((a, b) => (Number(b.importance) || 0) - (Number(a.importance) || 0))
+        .slice(0, limit);
 }
 
 // Haversine distance returns kilometers between two lat/lon points

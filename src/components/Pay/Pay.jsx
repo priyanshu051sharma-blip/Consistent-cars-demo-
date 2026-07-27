@@ -23,6 +23,11 @@ const Pay = ({ amount, name, email, phone, bookingDetails }) => {
       return;
     }
 
+    if (!amount || amount <= 0) {
+      alert("Invalid booking amount. Please review the pricing details.");
+      return;
+    }
+
     try {
       // Load Razorpay script if not already loaded
       if (!window.Razorpay) {
@@ -45,10 +50,15 @@ const Pay = ({ amount, name, email, phone, bookingDetails }) => {
       });
 
       if (!orderResponse.ok) {
-        throw new Error('Failed to create order');
+        const errorBody = await orderResponse.json().catch(() => ({}));
+        throw new Error(errorBody?.error || 'Failed to create order');
       }
 
       const order = await orderResponse.json();
+
+      if (!order?.id || !order?.amount) {
+        throw new Error('Invalid payment order returned from server');
+      }
 
       // Step 2: Razorpay options with order_id
       const options = {

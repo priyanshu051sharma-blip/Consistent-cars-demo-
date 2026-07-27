@@ -63,6 +63,10 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
     const [showPayment, setShowPayment] = useState(false);
     const [pickupLocation, setPickupLocation] = useState("");
     const [dropLocation, setDropLocation] = useState("");
+    const [pickupSuggestions, setPickupSuggestions] = useState<Location[]>([]);
+    const [dropSuggestions, setDropSuggestions] = useState<Location[]>([]);
+    const [showPickupSuggestions, setShowPickupSuggestions] = useState(false);
+    const [showDropSuggestions, setShowDropSuggestions] = useState(false);
     const [kilometers, setKilometers] = useState<number>(0);
     const [calculatingDistance, setCalculatingDistance] = useState(false);
     const [distanceData, setDistanceData] = useState<{
@@ -108,6 +112,43 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
         }
     }, [pickupLocation, dropLocation]);
 
+    const getMatchingSuggestions = (query: string, excludeName?: string) => {
+        if (!query.trim()) return [] as Location[];
+        const lower = query.toLowerCase();
+        return locations
+            .filter(loc => loc.name.toLowerCase().includes(lower) && loc.name.toLowerCase() !== excludeName?.toLowerCase())
+            .slice(0, 5);
+    };
+
+    const handlePickupLocationChange = (value: string) => {
+        setPickupLocation(value);
+        setShowPickupSuggestions(true);
+        setPickupSuggestions(getMatchingSuggestions(value, dropLocation));
+    };
+
+    const handleDropLocationChange = (value: string) => {
+        setDropLocation(value);
+        setShowDropSuggestions(true);
+        setDropSuggestions(getMatchingSuggestions(value, pickupLocation));
+    };
+
+    const selectPickupSuggestion = (suggestion: string) => {
+        setPickupLocation(suggestion);
+        setShowPickupSuggestions(false);
+    };
+
+    const selectDropSuggestion = (suggestion: string) => {
+        setDropLocation(suggestion);
+        setShowDropSuggestions(false);
+    };
+
+    const swapPickupAndDrop = () => {
+        setPickupLocation(dropLocation);
+        setDropLocation(pickupLocation);
+        setShowPickupSuggestions(false);
+        setShowDropSuggestions(false);
+    };
+
     const calculateDistance = async () => {
         if (!pickupLocation || !dropLocation) return;
 
@@ -128,9 +169,14 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
                 const distanceInKm = Math.ceil(data.distance / 1000);
                 setKilometers(distanceInKm);
                 setHours(parseDurationToHours(data.duration, distanceInKm));
+
+                if (data.provider === 'fallback') {
+                    alert('Distance could not be calculated precisely. Please refine the pickup/drop location.');
+                }
             }
         } catch (error) {
             console.error("Failed to calculate distance:", error);
+            alert('Unable to calculate route distance right now. Please double-check the location names.');
         } finally {
             setCalculatingDistance(false);
         }
@@ -372,26 +418,68 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
                                 <h3 className="text-lg font-bold text-cyan-400 mb-4 flex items-center gap-2">
                                     <MapPin size={20} /> Enter Pickup & Drop Location
                                 </h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
+                                <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-4">
+                                    <div className="relative">
                                         <label className="text-sm text-slate-400 mb-1 block">Pickup Location</label>
                                         <input
                                             type="text"
                                             placeholder={locationExamples.pickupPlaceholder}
                                             value={pickupLocation}
-                                            onChange={(e) => setPickupLocation(e.target.value)}
+                                            onChange={(e) => handlePickupLocationChange(e.target.value)}
+                                            onFocus={() => setShowPickupSuggestions(true)}
+                                            onBlur={() => setTimeout(() => setShowPickupSuggestions(false), 150)}
                                             className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-cyan-500 outline-none"
                                         />
+                                        {showPickupSuggestions && pickupSuggestions.length > 0 && (
+                                            <div className="absolute z-20 top-full mt-2 w-full rounded-2xl bg-slate-950/95 border border-white/10 shadow-2xl overflow-hidden">
+                                                {pickupSuggestions.map((suggestion) => (
+                                                    <button
+                                                        key={suggestion.id}
+                                                        type="button"
+                                                        onMouseDown={() => selectPickupSuggestion(suggestion.name)}
+                                                        className="w-full text-left px-4 py-3 hover:bg-cyan-500/10 text-slate-100"
+                                                    >
+                                                        {suggestion.name}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
-                                    <div>
+                                    <div className="flex items-center justify-center">
+                                        <button
+                                            type="button"
+                                            onClick={swapPickupAndDrop}
+                                            className="rounded-full bg-slate-900/70 border border-white/10 w-12 h-12 flex items-center justify-center text-cyan-400 hover:bg-cyan-500/10 transition"
+                                            aria-label="Swap pickup and drop locations"
+                                        >
+                                            <ArrowRight className="transform rotate-90" />
+                                        </button>
+                                    </div>
+                                    <div className="relative">
                                         <label className="text-sm text-slate-400 mb-1 block">Drop Location</label>
                                         <input
                                             type="text"
                                             placeholder={locationExamples.dropPlaceholder}
                                             value={dropLocation}
-                                            onChange={(e) => setDropLocation(e.target.value)}
+                                            onChange={(e) => handleDropLocationChange(e.target.value)}
+                                            onFocus={() => setShowDropSuggestions(true)}
+                                            onBlur={() => setTimeout(() => setShowDropSuggestions(false), 150)}
                                             className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-cyan-500 outline-none"
                                         />
+                                        {showDropSuggestions && dropSuggestions.length > 0 && (
+                                            <div className="absolute z-20 top-full mt-2 w-full rounded-2xl bg-slate-950/95 border border-white/10 shadow-2xl overflow-hidden">
+                                                {dropSuggestions.map((suggestion) => (
+                                                    <button
+                                                        key={suggestion.id}
+                                                        type="button"
+                                                        onMouseDown={() => selectDropSuggestion(suggestion.name)}
+                                                        className="w-full text-left px-4 py-3 hover:bg-cyan-500/10 text-slate-100"
+                                                    >
+                                                        {suggestion.name}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                                 {calculatingDistance && (
@@ -575,20 +663,30 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
                                             <div className="flex justify-between border-t border-white/20 pt-2 font-bold text-white"><span>Total</span><span>₹{grandTotal}</span></div>
                                         </div>
 
-                                        <Pay
-                                            amount={advanceBookingRequired ? advanceBookingAmount : grandTotal}
-                                            name={contactDetails.name}
-                                            email={contactDetails.email}
-                                            phone={contactDetails.phone}
-                                            bookingDetails={{
-                                                vehicle: selectedCar?.name || "Premium Car",
-                                                route: selectedLocation?.name || "Trip",
-                                                date: date,
-                                                time: time,
-                                                duration: hours,
-                                                isAdvance: advanceBookingRequired
-                                            }}
-                                        />
+                                        {(isFormValid && pricingBreakdown && (advanceBookingRequired ? advanceBookingAmount : grandTotal) > 0) ? (
+                                            <Pay
+                                                amount={advanceBookingRequired ? advanceBookingAmount : grandTotal}
+                                                name={contactDetails.name}
+                                                email={contactDetails.email}
+                                                phone={contactDetails.phone}
+                                                bookingDetails={{
+                                                    vehicle: selectedCar?.name || "Premium Car",
+                                                    route: selectedLocation?.name || "Trip",
+                                                    date: date,
+                                                    time: time,
+                                                    duration: hours,
+                                                    isAdvance: advanceBookingRequired
+                                                }}
+                                            />
+                                        ) : (
+                                            <button
+                                                type="button"
+                                                disabled
+                                                className="w-full rounded-xl bg-slate-700 px-6 py-4 text-white font-semibold opacity-50"
+                                            >
+                                                Confirm & Pay ₹0
+                                            </button>
+                                        )}
 
                                         {!isFormValid && (
                                             <p className="text-xs text-yellow-300 mt-2 text-center">Please fill all details above to proceed.</p>

@@ -71,6 +71,7 @@ export function calculateDynamicPricing({
   advanceBookingThreshold = 30,
   advanceBookingPercent = 0.3,
   minAdvanceAmount = 3000,
+  taxes = 0,
 }: {
   basePrice?: number;
   kilometers: number;
