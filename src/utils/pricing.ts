@@ -71,6 +71,7 @@ export function calculateDynamicPricing({
   advanceBookingThreshold = 30,
   advanceBookingPercent = 0.3,
   minAdvanceAmount = 3000,
+  tripMultiplier = 1,
   taxes = 0,
 }: {
   basePrice?: number;
@@ -91,6 +92,7 @@ export function calculateDynamicPricing({
   advanceBookingThreshold?: number;
   advanceBookingPercent?: number;
   minAdvanceAmount?: number;
+  tripMultiplier?: number;
 }): DynamicPricingBreakdown {
   const vehicleTier = resolveVehicleTier(vehicleType);
   const normalizedKm = Math.max(0, Math.round(kilometers || 0));
@@ -122,10 +124,13 @@ export function calculateDynamicPricing({
   const taxAmount = totalBeforeTax * effectiveTaxRate;
   const discountAmount = Math.max(0, discounts || 0);
   const minimumFare = Math.max(vehicleTier.minimumFare, baseFare);
-  const totalCost = Math.max(minimumFare, roundCurrency(totalBeforeTax + taxAmount - discountAmount));
+  const subtotalAfterTax = roundCurrency(totalBeforeTax + taxAmount - discountAmount);
+  const preMultiplierCost = Math.max(minimumFare, subtotalAfterTax);
+  const finalCost = roundCurrency(preMultiplierCost * tripMultiplier);
+  const adjustmentAmount = roundCurrency(finalCost - preMultiplierCost);
   const advanceBookingRequired = normalizedKm > advanceBookingThreshold;
   const advanceBookingAmount = Math.round(
-    Math.max(minAdvanceAmount, totalCost * advanceBookingPercent)
+    Math.max(minAdvanceAmount, finalCost * advanceBookingPercent)
   );
 
   return {
@@ -140,7 +145,7 @@ export function calculateDynamicPricing({
     taxAmount: roundCurrency(taxAmount),
     discountAmount: roundCurrency(discountAmount),
     subtotal: roundCurrency(subtotal),
-    totalCost: roundCurrency(totalCost),
+    totalCost: finalCost,
     minimumFare: roundCurrency(minimumFare),
     advanceBookingRequired,
     advanceBookingAmount,
@@ -150,9 +155,11 @@ export function calculateDynamicPricing({
       { label: "Distance", amount: roundCurrency(distanceCharge) },
       { label: "Travel Time", amount: roundCurrency(timeCharge) },
       { label: "Surge", amount: roundCurrency(surgeAmount) },
-      { label: "Platform Fee", amount: roundCurrency(platformFee) },
+      { label: "Platform Fee", amount: roundCurrency(usedPlatformFee) },
+      { label: "Driver Allowance", amount: roundCurrency(driverAllowanceToUse) },
       { label: "Taxes", amount: roundCurrency(taxAmount) },
       { label: "Discounts", amount: roundCurrency(-discountAmount) },
+      ...(tripMultiplier !== 1 ? [{ label: "Trip Adjustment", amount: adjustmentAmount }] : []),
     ],
     basePrice: roundCurrency(baseFare),
     extraKm,

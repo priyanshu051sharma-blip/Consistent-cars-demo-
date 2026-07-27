@@ -1,5 +1,68 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import prisma from '../../lib/prisma';
+import nodemailer from 'nodemailer';
+import twilio from 'twilio';
+
+const createEmailTransport = () => {
+  if (!process.env.EMAIL_SERVER_HOST || !process.env.EMAIL_SERVER_USER || !process.env.EMAIL_SERVER_PASSWORD) {
+    return null;
+  }
+
+  return nodemailer.createTransport({
+    host: process.env.EMAIL_SERVER_HOST,
+    port: Number(process.env.EMAIL_SERVER_PORT) || 587,
+    secure: process.env.EMAIL_SERVER_SECURE === 'true',
+    auth: {
+      user: process.env.EMAIL_SERVER_USER,
+      pass: process.env.EMAIL_SERVER_PASSWORD,
+    },
+  });
+};
+
+const createTwilioClient = () => {
+  if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN) {
+    return null;
+  }
+
+  return twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+};
+
+const sendBookingEmail = async (email: string, bookingDetails: any, amount: number) => {
+  const transporter = createEmailTransport();
+  if (!transporter) {
+    console.warn('Email transporter is not configured. Skipping booking confirmation email.');
+    return;
+  }
+
+  const message = {
+    from: process.env.EMAIL_FROM || 'Consistent Cars <no-reply@consistentcars.com>',
+    to: email,
+    subject: 'Your Consistent Cars Booking Confirmation',
+    text: `Thank you for booking with Consistent Cars!\n\nBooking details:\nVehicle: ${bookingDetails.vehicle}\nRoute: ${bookingDetails.route}\nTrip: ${bookingDetails.tripType || 'One-way'}\nDate & Time: ${bookingDetails.date} ${bookingDetails.time}\nDuration: ${bookingDetails.duration} hours\nAmount: ₹${amount.toFixed(2)}\n\nWe will contact you shortly with the driver details.`,
+  };
+
+  await transporter.sendMail(message);
+};
+
+const sendBookingSms = async (phone: string, bookingDetails: any, amount: number) => {
+  const client = createTwilioClient();
+  if (!client) {
+    console.warn('Twilio client is not configured. Skipping SMS notification.');
+    return;
+  }
+
+  const fromNumber = process.env.TWILIO_FROM_NUMBER;
+  if (!fromNumber) {
+    console.warn('Twilio FROM number is not configured. Skipping SMS notification.');
+    return;
+  }
+
+  await client.messages.create({
+    body: `Consistent Cars booking confirmed! Vehicle: ${bookingDetails.vehicle}. Route: ${bookingDetails.route}. Amount: ₹${amount.toFixed(2)}.`,
+    from: fromNumber,
+    to: phone,
+  });
+};
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'POST') {
@@ -21,6 +84,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           status: 'Paid'
         }
       });
+
+      try {
+        await Promise.all([
+          sendBookingEmail(email, details, Number(amount)),
+          sendBookingSms(phone, details, Number(amount)),
+        ]);
+      } catch (notificationError) {
+        console.warn('Booking saved, but notification sending failed:', notificationError);
+      }
 
       return res.status(201).json({ booking });
     } catch (error) {

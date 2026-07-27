@@ -63,6 +63,7 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
     const [showPayment, setShowPayment] = useState(false);
     const [pickupLocation, setPickupLocation] = useState("");
     const [dropLocation, setDropLocation] = useState("");
+    const [tripType, setTripType] = useState<'one-way' | 'round-trip'>('one-way');
     const [pickupSuggestions, setPickupSuggestions] = useState<Location[]>([]);
     const [dropSuggestions, setDropSuggestions] = useState<Location[]>([]);
     const [showPickupSuggestions, setShowPickupSuggestions] = useState(false);
@@ -324,6 +325,7 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
             discounts: 0,
             advanceBookingThreshold: 30,
             advanceBookingPercent: 0.3,
+            tripMultiplier: tripType === 'one-way' ? 1.15 : 1.0,
             minAdvanceAmount: 3000,
         })
         : null;
@@ -362,6 +364,7 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
                 ["Email", contactDetails.email],
                 ["Trip Route", `${selectedLocation.name} Trip`],
                 ["Vehicle", selectedCar.name],
+                ["Trip Type", tripType === 'round-trip' ? 'Round-trip' : 'One-way'],
                 ["Date & Time", `${date} at ${time}`],
                 ["Duration", `${hours} Hours`],
             ],
@@ -378,7 +381,7 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
             head: [["Description", "Amount"]],
             body: [
                 [`Vehicle Rental (${hours} hours)`, `Rs. ${grandTotal.toFixed(2)}`],
-                ["Taxes & Fees", "Rs. 0.00"],
+                ["GST (12%)", `Rs. ${(grandTotal * 0.12 / 1.12).toFixed(2)}`],
                 ["Total Amount Paid", `Rs. ${grandTotal.toFixed(2)}`],
             ],
             styles: { fontSize: 11, cellPadding: 6 },
@@ -620,6 +623,25 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
                                         </div>
                                         
                                         <div className="border-t border-white/10 my-2" />
+                                        <div className="space-y-2">
+                                            <label className="text-sm text-slate-300">Trip Type</label>
+                                            <div className="flex gap-3">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setTripType('one-way')}
+                                                    className={`w-full rounded-xl px-4 py-3 text-sm font-semibold ${tripType === 'one-way' ? 'bg-cyan-500 text-slate-950' : 'bg-slate-900/70 text-slate-200 hover:bg-slate-800'}`}
+                                                >
+                                                    One-way
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setTripType('round-trip')}
+                                                    className={`w-full rounded-xl px-4 py-3 text-sm font-semibold ${tripType === 'round-trip' ? 'bg-cyan-500 text-slate-950' : 'bg-slate-900/70 text-slate-200 hover:bg-slate-800'}`}
+                                                >
+                                                    Round-trip
+                                                </button>
+                                            </div>
+                                        </div>
                                         <div className="space-y-2 relative">
                                             <label className="text-sm text-slate-300 flex items-center gap-2">
                                                 <MapPin size={16} className="text-cyan-400" />
@@ -751,6 +773,8 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
                                                     date: date,
                                                     time: time,
                                                     duration: hours,
+                                                    tripType,
+                                                    taxAmount: pricingBreakdown?.taxAmount || 0,
                                                     isAdvance: advanceBookingRequired
                                                 }}
                                             />
