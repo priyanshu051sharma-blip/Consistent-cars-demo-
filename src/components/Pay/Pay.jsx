@@ -1,9 +1,25 @@
 "use client";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
+import QRCode from "qrcode";
 
 const Pay = ({ amount, name, email, phone, bookingDetails }) => {
+  const [paymentQr, setPaymentQr] = useState("");
+
+  useEffect(() => {
+    const paymentLink = process.env.NEXT_PUBLIC_RAZORPAY_PAYMENT_LINK;
+    const upiId = process.env.NEXT_PUBLIC_UPI_ID;
+    if ((!paymentLink && !upiId) || !amount) return;
+
+    const paymentUri = paymentLink
+      ? `${paymentLink}${paymentLink.includes("?") ? "&" : "?"}amount=${encodeURIComponent(Number(amount).toFixed(2))}`
+      : `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent("Consistent Cars")}&am=${encodeURIComponent(Number(amount).toFixed(2))}&cu=INR&tn=${encodeURIComponent(`Consistent Cars ${bookingDetails?.vehicle || "Cab booking"}`)}`;
+    QRCode.toDataURL(paymentUri, { width: 240, margin: 2 })
+      .then(setPaymentQr)
+      .catch((error) => console.error("Payment QR generation failed:", error));
+  }, [amount, bookingDetails?.vehicle]);
+
   useEffect(() => {
     // Load Razorpay script
     const script = document.createElement("script");
@@ -74,7 +90,7 @@ const Pay = ({ amount, name, email, phone, bookingDetails }) => {
           console.log("Razorpay Response:", response);
 
           try {
-            await fetch('/api/bookings', {
+            const bookingResponse = await fetch('/api/bookings', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -89,8 +105,14 @@ const Pay = ({ amount, name, email, phone, bookingDetails }) => {
                 signature: response.razorpay_signature
               })
             });
+            const bookingResult = await bookingResponse.json().catch(() => ({}));
+            if (!bookingResponse.ok) {
+              throw new Error(bookingResult?.error || 'Payment verification failed');
+            }
           } catch (error) {
             console.error("Failed to save booking:", error);
+            alert(`Payment received, but booking confirmation failed: ${error.message}`);
+            return;
           }
 
           generatePDF(response);
@@ -153,16 +175,21 @@ const Pay = ({ amount, name, email, phone, bookingDetails }) => {
 
     doc.text(`Date: ${invoiceDate}`, 14, 50);
     doc.text(`Payment ID: ${response.razorpay_payment_id}`, 14, 55);
+    if (bookingDetails?.totalAmount && bookingDetails.totalAmount !== amount) {
+      doc.text(`Booking Total: ₹${Number(bookingDetails.totalAmount).toFixed(2)}`, 14, 60);
+      doc.text(`Balance Due: ₹${Number(bookingDetails.remainingAmount || 0).toFixed(2)}`, 14, 65);
+    }
 
     // -- Customer Info --
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
-    doc.text("Billed To:", 14, 70);
+    doc.text("Billed To:", 14, bookingDetails?.totalAmount && bookingDetails.totalAmount !== amount ? 78 : 70);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
-    doc.text(name, 14, 76);
-    doc.text(email, 14, 81);
-    doc.text(phone, 14, 86);
+    const customerY = bookingDetails?.totalAmount && bookingDetails.totalAmount !== amount ? 84 : 76;
+    doc.text(name, 14, customerY);
+    doc.text(email, 14, customerY + 5);
+    doc.text(phone, 14, customerY + 10);
 
     // -- Booking Details --
     if (bookingDetails) {
@@ -175,6 +202,10 @@ const Pay = ({ amount, name, email, phone, bookingDetails }) => {
       doc.text(`Vehicle: ${bookingDetails.vehicle}`, 110, 81);
       doc.text(`Date: ${bookingDetails.date} at ${bookingDetails.time}`, 110, 86);
       doc.text(`Duration: ${bookingDetails.duration} Days`, 110, 91);
+      if (bookingDetails.totalAmount && bookingDetails.totalAmount !== amount) {
+        doc.text(`Advance Paid: ₹${Number(amount).toFixed(2)}`, 110, 96);
+        doc.text(`Balance Due: ₹${Number(bookingDetails.remainingAmount || 0).toFixed(2)}`, 110, 101);
+      }
     }
 
     // -- Table --
@@ -208,13 +239,21 @@ const Pay = ({ amount, name, email, phone, bookingDetails }) => {
   };
 
   return (
-    <button
-      onClick={handlePayment}
-      type="button"
-      className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-cyan-900/20 transform transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
-    >
-      Confirm & Pay ₹{amount.toLocaleString()}
-    </button>
+    <div className="space-y-3">
+      {paymentQr && (
+        <div className="rounded-xl bg-white p-4 text-center text-slate-900">
+          <img src={paymentQr} alt="Scan to pay by UPI" className="mx-auto h-48 w-48" />
+          <p className="mt-2 text-xs font-semibold">Scan to pay ₹{Number(amount).toLocaleString()} via Razorpay</p>
+        </div>
+      )}
+      <button
+        onClick={handlePayment}
+        type="button"
+        className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-cyan-900/20 transform transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
+      >
+        Confirm & Pay ₹{amount.toLocaleString()}
+      </button>
+    </div>
   );
 };
 

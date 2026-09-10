@@ -8,6 +8,7 @@ import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 import AIChatBot from "../components/AIChabot/AIChatbot";
 import Pay from "../components/Pay/Pay";
+import LiveRouteMap from "../components/LiveRouteMap/LiveRouteMap";
 import { useRouter } from "next/router";
 import { calculateDynamicPricing, getLocationExamples } from "../utils/pricing";
 
@@ -73,6 +74,8 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
     const [distanceData, setDistanceData] = useState<{
         distance: number;
         duration: string;
+        trafficMultiplier?: number;
+        trafficAvailable?: boolean;
     } | null>(null);
 
     const [contactDetails, setContactDetails] = useState({
@@ -111,7 +114,7 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
             }, 1000);
             return () => clearTimeout(timeoutId);
         }
-    }, [pickupLocation, dropLocation]);
+    }, [pickupLocation, dropLocation, date, time]);
 
     const commonPlaceSuggestions: string[] = [
         'Pune Airport',
@@ -201,6 +204,7 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
                 body: JSON.stringify({
                     origin: pickupLocation,
                     destination: dropLocation,
+                    departureTime: date && time ? `${date}T${time}:00+05:30` : undefined,
                 }),
             });
 
@@ -319,14 +323,14 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
             pricePerMinute: matchedPricing.extraHourRate ? matchedPricing.extraHourRate / 60 : undefined,
             baseKm: matchedPricing.baseKm,
             driverAllowance: matchedPricing.driverAllowance,
-            surgeMultiplier: getDemandMultiplier(date, time),
+            surgeMultiplier: getDemandMultiplier(date, time) * (distanceData?.trafficMultiplier || 1),
             platformFee: 15,
             taxRate: 0.12,
             discounts: 0,
-            advanceBookingThreshold: 30,
-            advanceBookingPercent: 0.3,
+            advanceBookingThreshold: 25,
+            advanceBookingPercent: 0,
             tripMultiplier: tripType === 'one-way' ? 1.15 : 1.0,
-            minAdvanceAmount: 3000,
+            minAdvanceAmount: 300,
         })
         : null;
 
@@ -536,8 +540,14 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
                                     <div className="flex gap-6 mt-3 bg-cyan-500/10 border border-cyan-500/20 rounded-xl px-4 py-3">
                                         <span className="text-white text-sm">📍 Distance: <strong>{(distanceData.distance / 1000).toFixed(1)} km</strong></span>
                                         <span className="text-white text-sm">⏱️ Duration: <strong>{distanceData.duration}</strong></span>
+                                        {distanceData.trafficAvailable && <span className="text-white text-sm">🚦 Traffic pricing: <strong>{distanceData.trafficMultiplier?.toFixed(2)}x</strong></span>}
                                     </div>
                                 )}
+                                <LiveRouteMap
+                                    origin={pickupLocation}
+                                    destination={dropLocation}
+                                    city={selectedLocation?.name}
+                                />
                                 <div className="mt-4">
                                     <label className="text-sm text-slate-400 mb-1 block">Estimated Distance (km)</label>
                                     <input
@@ -717,6 +727,12 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
                                                     <span className="text-slate-300">⏱️ Duration:</span>
                                                     <span className="text-white font-bold">{distanceData.duration}</span>
                                                 </div>
+                                                {distanceData.trafficAvailable && (
+                                                    <div className="flex justify-between text-sm">
+                                                        <span className="text-slate-300">🚦 Traffic factor:</span>
+                                                        <span className="text-white font-bold">{distanceData.trafficMultiplier?.toFixed(2)}x</span>
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
 
@@ -775,7 +791,9 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
                                                     duration: hours,
                                                     tripType,
                                                     taxAmount: pricingBreakdown?.taxAmount || 0,
-                                                    isAdvance: advanceBookingRequired
+                                                    isAdvance: advanceBookingRequired,
+                                                    totalAmount: grandTotal,
+                                                    remainingAmount: Math.max(0, grandTotal - paymentAmount),
                                                 }}
                                             />
                                         ) : (

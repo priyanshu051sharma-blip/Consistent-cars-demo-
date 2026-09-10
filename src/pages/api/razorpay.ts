@@ -7,7 +7,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 
-  const { amount } = req.body;
+  const { amount, bookingReference } = req.body;
   const numericAmount = Number(amount);
 
   if (!numericAmount || numericAmount <= 0) {
@@ -33,6 +33,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       payment_capture: true,
       notes: {
         purpose: 'Consistent Cars booking payment',
+        ...(bookingReference ? { bookingReference: String(bookingReference).slice(0, 40) } : {}),
       },
     });
 

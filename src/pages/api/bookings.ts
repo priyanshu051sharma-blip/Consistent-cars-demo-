@@ -2,6 +2,8 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import prisma from '../../lib/prisma';
 import nodemailer from 'nodemailer';
 import twilio from 'twilio';
+import Razorpay from 'razorpay';
+import crypto from 'crypto';
 
 const createEmailTransport = () => {
   if (!process.env.EMAIL_SERVER_HOST || !process.env.EMAIL_SERVER_USER || !process.env.EMAIL_SERVER_PASSWORD) {
@@ -70,6 +72,38 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (!name || !email || !phone || !type || !details || !amount || !paymentId || !orderId || !signature) {
       return res.status(400).json({ error: 'Missing booking data' });
+    }
+
+    const keyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+    const keySecret = process.env.RAZORPAY_KEY_SECRET;
+    if (!keyId || !keySecret) {
+      return res.status(500).json({ error: 'Razorpay credentials are not configured' });
+    }
+
+    try {
+      const expectedSignature = crypto
+        .createHmac('sha256', keySecret)
+        .update(`${orderId}|${paymentId}`)
+        .digest('hex');
+      const providedSignature = String(signature);
+      if (expectedSignature.length !== providedSignature.length || !crypto.timingSafeEqual(Buffer.from(expectedSignature), Buffer.from(providedSignature))) {
+        return res.status(400).json({ error: 'Invalid payment signature' });
+      }
+
+      const razorpay = new Razorpay({ key_id: keyId, key_secret: keySecret });
+      const order = await razorpay.orders.fetch(String(orderId));
+      const expectedAmount = Math.round(Number(amount) * 100);
+      if (order.currency !== 'INR' || Number(order.amount) !== expectedAmount) {
+        return res.status(400).json({ error: 'Payment amount does not match the booking' });
+      }
+
+      const payment = await razorpay.payments.fetch(String(paymentId));
+      if (payment.order_id !== order.id || payment.status !== 'captured') {
+        return res.status(400).json({ error: 'Payment was not captured for this order' });
+      }
+    } catch (verificationError) {
+      console.error('Razorpay payment verification failed:', verificationError);
+      return res.status(400).json({ error: 'Unable to verify payment' });
     }
 
     try {

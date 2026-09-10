@@ -68,9 +68,9 @@ export function calculateDynamicPricing({
   discounts = 0,
   tollCharges = 0,
   airportParkingFee = 0,
-  advanceBookingThreshold = 30,
-  advanceBookingPercent = 0.3,
-  minAdvanceAmount = 3000,
+  advanceBookingThreshold = 25,
+  advanceBookingPercent = 0,
+  minAdvanceAmount = 300,
   tripMultiplier = 1,
   taxes = 0,
 }: {
@@ -103,7 +103,7 @@ export function calculateDynamicPricing({
   const isPackageTrip = normalizedKm > baseKm || normalizedMinutes > packageDurationMinutes;
   const localShortTrip = !isPackageTrip && normalizedKm <= 40 && normalizedMinutes <= 90;
   const packageBasePrice = basePrice ?? vehicleTier.baseFare;
-  const baseFare = isPackageTrip ? packageBasePrice : vehicleTier.baseFare;
+  const baseFare = packageBasePrice;
   const distanceCharge = isPackageTrip
     ? Math.max(normalizedKm - baseKm, 0) * ratePerKm
     : normalizedKm * ratePerKm;
@@ -115,10 +115,8 @@ export function calculateDynamicPricing({
   const subtotal = baseFare + distanceCharge + timeCharge;
   const normalizedSurge = Math.max(1, surgeMultiplier || 1);
   const surgeAmount = subtotal * (normalizedSurge - 1);
-  const localPlatformFee = localShortTrip ? Math.min(platformFee, 10) : platformFee;
-  const localDriverAllowance = localShortTrip ? Math.min(driverAllowance, 75) : driverAllowance;
-  const driverAllowanceToUse = isPackageTrip ? driverAllowance : localDriverAllowance;
-  const usedPlatformFee = isPackageTrip ? platformFee : localPlatformFee;
+  const driverAllowanceToUse = driverAllowance;
+  const usedPlatformFee = platformFee;
   const totalBeforeTax = subtotal + surgeAmount + tollCharges + airportParkingFee + usedPlatformFee + driverAllowanceToUse;
   const effectiveTaxRate = taxRate ?? (taxes ?? 0);
   const taxAmount = totalBeforeTax * effectiveTaxRate;

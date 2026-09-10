@@ -5,6 +5,9 @@ interface DistanceResult {
     duration: string;
     estimated: boolean;
     provider?: string;
+    trafficDuration?: string;
+    trafficMultiplier?: number;
+    trafficAvailable?: boolean;
 }
 
 interface NormalizedLocation {
@@ -25,7 +28,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(405).end(`Method ${req.method} Not Allowed`);
     }
 
-    const { origin, destination } = req.body;
+    const { origin, destination, departureTime } = req.body;
 
     if (!origin || !destination) {
         return res.status(400).json({ error: 'Origin and destination are required' });
@@ -41,7 +44,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         if (hasValidGoogleKey) {
             const geocodedOrigin = await geocodeAddress(finalOrigin, apiKey as string);
             const geocodedDestination = await geocodeAddress(finalDestination, apiKey as string);
-            const googleResult = await getDistanceFromGoogleDirections(geocodedOrigin, geocodedDestination, apiKey as string);
+            const googleResult = await getDistanceFromGoogleDirections(geocodedOrigin, geocodedDestination, apiKey as string, departureTime);
             if (googleResult) {
                 return res.status(200).json(googleResult);
             }
@@ -170,11 +173,13 @@ function parseNormalizedLocation(text: string): NormalizedLocation | null {
 }
 
 // Use the Directions API for a route-aware driving distance and duration.
-async function getDistanceFromGoogleDirections(origin: string | GoogleGeocodeResult, destination: string | GoogleGeocodeResult, apiKey: string): Promise<DistanceResult | null> {
+async function getDistanceFromGoogleDirections(origin: string | GoogleGeocodeResult, destination: string | GoogleGeocodeResult, apiKey: string, departureTime?: string): Promise<DistanceResult | null> {
     const originParam = typeof origin === 'string' ? encodeURIComponent(origin) : `place_id:${origin.place_id}`;
     const destinationParam = typeof destination === 'string' ? encodeURIComponent(destination) : `place_id:${destination.place_id}`;
 
-    const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${originParam}&destination=${destinationParam}&mode=driving&key=${apiKey}`;
+    const departureTimestamp = getDepartureTimestamp(departureTime);
+    const trafficParams = departureTimestamp ? `&departure_time=${departureTimestamp}&traffic_model=best_guess` : '';
+    const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${originParam}&destination=${destinationParam}&mode=driving${trafficParams}&key=${apiKey}`;
     const response = await fetch(url);
     const data = await response.json();
 
@@ -183,18 +188,30 @@ async function getDistanceFromGoogleDirections(origin: string | GoogleGeocodeRes
         const route = data.routes[0];
         let distanceMeters = 0;
         let durationSeconds = 0;
+        let trafficDurationSeconds = 0;
+        let hasTrafficDuration = false;
         if (Array.isArray(route.legs)) {
             for (const leg of route.legs) {
                 if (leg.distance && leg.distance.value) distanceMeters += leg.distance.value;
                 if (leg.duration && leg.duration.value) durationSeconds += leg.duration.value;
+                if (leg.duration_in_traffic && leg.duration_in_traffic.value) {
+                    trafficDurationSeconds += leg.duration_in_traffic.value;
+                    hasTrafficDuration = true;
+                }
             }
         }
 
+        const effectiveDurationSeconds = hasTrafficDuration ? trafficDurationSeconds : durationSeconds;
         return {
             distance: distanceMeters,
-            duration: formatDuration(durationSeconds),
+            duration: formatDuration(effectiveDurationSeconds),
             estimated: false,
-            provider: 'google-directions'
+            provider: 'google-directions',
+            ...(hasTrafficDuration ? {
+                trafficDuration: formatDuration(trafficDurationSeconds),
+                trafficMultiplier: Math.min(1.75, Math.max(1, trafficDurationSeconds / Math.max(durationSeconds, 1))),
+                trafficAvailable: true,
+            } : { trafficAvailable: false }),
         };
     }
 
@@ -245,7 +262,9 @@ async function getDistanceFromOpenStreetMap(origin: string, destination: string)
             distance: bestRoute.distance,
             duration: formatDuration(bestRoute.duration),
             estimated: false,
-            provider: bestRoute.provider
+            provider: bestRoute.provider,
+            trafficAvailable: false,
+            trafficMultiplier: 1,
         };
     }
 
@@ -278,8 +297,17 @@ async function getDistanceFromOpenStreetMap(origin: string, destination: string)
         distance: route.distance,
         duration: formatDuration(route.duration),
         estimated: false,
-        provider: 'openstreetmap'
+        provider: 'openstreetmap',
+        trafficAvailable: false,
+        trafficMultiplier: 1,
     };
+}
+
+function getDepartureTimestamp(departureTime?: string): number | null {
+    const parsed = departureTime ? Date.parse(departureTime) : Date.now();
+    if (Number.isNaN(parsed)) return null;
+    const now = Math.floor(Date.now() / 1000);
+    return Math.max(now, Math.floor(parsed / 1000));
 }
 
 async function fetchLocationCandidates(location: string, headers: Record<string, string>): Promise<any[]> {

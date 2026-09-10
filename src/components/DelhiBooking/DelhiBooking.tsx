@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { MapPin, Car, Zap, Calendar, Clock, User, Mail, Phone } from "lucide-react";
 import { calculateDynamicPricing, getLocationExamples } from "../../utils/pricing";
+import Pay from "../Pay/Pay";
+import LiveRouteMap from "../LiveRouteMap/LiveRouteMap";
 
 const getDemandMultiplier = (tripDate: string, tripTime: string) => {
     if (!tripDate) return 1;
@@ -55,6 +57,7 @@ const DelhiBooking = ({ cityName = "Delhi" }: DelhiBookingProps) => {
     const [totalCost, setTotalCost] = useState<number>(0);
     const [advanceBookingRequired, setAdvanceBookingRequired] = useState(false);
     const [advanceBookingAmount, setAdvanceBookingAmount] = useState(0);
+    const [paymentReady, setPaymentReady] = useState(false);
 
     const [contactDetails, setContactDetails] = useState({
         name: "",
@@ -69,6 +72,8 @@ const DelhiBooking = ({ cityName = "Delhi" }: DelhiBookingProps) => {
     const [distanceData, setDistanceData] = useState<{
         distance: number;
         duration: string;
+        trafficMultiplier?: number;
+        trafficAvailable?: boolean;
     } | null>(null);
 
     const [calculatingDistance, setCalculatingDistance] = useState(false);
@@ -92,6 +97,9 @@ const DelhiBooking = ({ cityName = "Delhi" }: DelhiBookingProps) => {
                 body: JSON.stringify({
                     origin: contactDetails.pickupLocation,
                     destination: contactDetails.dropLocation,
+                    departureTime: contactDetails.date && contactDetails.time
+                        ? `${contactDetails.date}T${contactDetails.time}:00+05:30`
+                        : undefined,
                 }),
             });
 
@@ -138,19 +146,25 @@ const DelhiBooking = ({ cityName = "Delhi" }: DelhiBookingProps) => {
             pricePerMinute: pricingData.extraHourRate ? pricingData.extraHourRate / 60 : undefined,
             baseKm: pricingData.baseKm,
             driverAllowance: pricingData.driverAllowance,
-            surgeMultiplier: getDemandMultiplier(contactDetails.date, contactDetails.time),
+            surgeMultiplier: getDemandMultiplier(contactDetails.date, contactDetails.time) * (distanceData?.trafficMultiplier || 1),
             platformFee: 15,
             taxRate: 0.12,
             discounts: 0,
-            advanceBookingThreshold: 30,
-            advanceBookingPercent: 0.3,
-            minAdvanceAmount: 3000,
+            advanceBookingThreshold: 25,
+            advanceBookingPercent: 0,
+            minAdvanceAmount: 300,
         });
 
         setAdvanceBookingRequired(pricingBreakdown.advanceBookingRequired);
         setAdvanceBookingAmount(pricingBreakdown.advanceBookingAmount);
         return pricingBreakdown.totalCost;
     };
+
+    useEffect(() => {
+        if (selectedPricing) {
+            setTotalCost(calculateCost(selectedPricing, kilometers));
+        }
+    }, [selectedPricing, kilometers, distanceData, contactDetails.date, contactDetails.time]);
 
     const handleLocationChange = (location: string) => {
         const locationName = bookingType === "local" ? "Delhi Local" : "Delhi Outstation";
@@ -215,24 +229,20 @@ const DelhiBooking = ({ cityName = "Delhi" }: DelhiBookingProps) => {
             return;
         }
 
-        // Trigger payment
-        const bookingData = {
-            amount: totalCost,
-            name: contactDetails.name,
-            email: contactDetails.email,
-            phone: contactDetails.phone,
-            bookingDetails: {
-                vehicle: selectedPricing.car.name,
-                location: selectedPricing.location,
-                kilometers: kilometers,
-                date: contactDetails.date,
-                time: contactDetails.time,
-            },
-        };
-
-        // Show payment modal (you would integrate Razorpay here)
-        alert(`Booking for ₹${totalCost}\nCar: ${selectedPricing.car.name}\nKm: ${kilometers}\nLocation: ${selectedPricing.location}`);
+        setPaymentReady(true);
     };
+
+    const paymentDetails = selectedPricing ? {
+        vehicle: selectedPricing.car.name,
+        route: `${contactDetails.pickupLocation} → ${contactDetails.dropLocation}`,
+        date: contactDetails.date,
+        time: contactDetails.time,
+        duration: distanceData ? parseDurationToMinutes(distanceData.duration, kilometers) : 60,
+        tripType: bookingType === "local" ? "Local" : "Outstation",
+        kilometers,
+        totalAmount: totalCost,
+        remainingAmount: Math.max(0, totalCost - (advanceBookingRequired ? advanceBookingAmount : totalCost)),
+    } : null;
 
     const uniqueCars = Array.from(
         new Map(
@@ -350,6 +360,11 @@ const DelhiBooking = ({ cityName = "Delhi" }: DelhiBookingProps) => {
                                         </p>
                                     </div>
                                 )}
+                                <LiveRouteMap
+                                    origin={contactDetails.pickupLocation}
+                                    destination={contactDetails.dropLocation}
+                                    city={cityName}
+                                />
                             </div>
                         </div>
 
@@ -372,7 +387,7 @@ const DelhiBooking = ({ cityName = "Delhi" }: DelhiBookingProps) => {
                             {advanceBookingRequired && (
                                 <div className="mt-3 rounded-lg border border-amber-400/40 bg-amber-500/10 p-3 text-sm text-amber-200">
                                     <p className="font-semibold">Advance booking required</p>
-                                    <p>Trips above 30 km need a non-refundable advance of ₹{advanceBookingAmount}.</p>
+                                    <p>Trips above 25 km need a non-refundable advance of ₹{advanceBookingAmount}.</p>
                                 </div>
                             )}
                         </div>
@@ -489,13 +504,23 @@ const DelhiBooking = ({ cityName = "Delhi" }: DelhiBookingProps) => {
                         </div>
 
                         {/* Book Button */}
-                        <button
-                            onClick={handlePayment}
-                            disabled={!selectedCar || !contactDetails.name}
-                            className="w-full py-4 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                        >
-                            Proceed to Payment
-                        </button>
+                        {paymentReady && paymentDetails ? (
+                            <Pay
+                                amount={advanceBookingRequired ? advanceBookingAmount : totalCost}
+                                name={contactDetails.name}
+                                email={contactDetails.email}
+                                phone={contactDetails.phone}
+                                bookingDetails={paymentDetails}
+                            />
+                        ) : (
+                            <button
+                                onClick={handlePayment}
+                                disabled={!selectedCar || !selectedPricing || !contactDetails.name || !contactDetails.email || !contactDetails.phone || !contactDetails.date || !contactDetails.time || !distanceData}
+                                className="w-full py-4 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                            >
+                                Proceed to Payment
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>
