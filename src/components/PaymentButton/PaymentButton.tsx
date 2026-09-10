@@ -34,10 +34,10 @@ const PaymentButton = () => {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/razorpay", {
+      const res = await fetch("/api/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: 500 }), // Rs. 500
+        body: JSON.stringify({ amount: 50000, currency: "INR" }),
       });
 
       if (!res.ok) {
@@ -52,11 +52,23 @@ const PaymentButton = () => {
         currency: order.currency,
         name: "Consistent Cars",
         description: "Rental Payment",
-        order_id: order.id,
-        handler: function (response: any) {
-          alert(
-            "Payment Successful! Payment ID: " + response.razorpay_payment_id
-          );
+        order_id: order.order_id,
+        handler: async function (response: any) {
+          try {
+            const verificationResponse = await fetch("/api/verify-payment", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(response),
+            });
+            const verification = await verificationResponse.json();
+            if (!verificationResponse.ok || !verification.success) {
+              throw new Error(verification.error || "Payment verification failed");
+            }
+            alert("Payment Successful! Payment ID: " + response.razorpay_payment_id);
+          } catch (error) {
+            console.error("Payment verification error:", error);
+            alert("Payment was received but could not be verified. Please contact support.");
+          }
         },
         prefill: {
           name: "Customer",
@@ -69,6 +81,9 @@ const PaymentButton = () => {
       };
 
       const razorpay = new (window as any).Razorpay(options);
+      razorpay.on("payment.failed", () => {
+        alert("Payment failed. Please try again.");
+      });
       razorpay.open();
     } catch (error) {
       console.error("Payment error:", error);

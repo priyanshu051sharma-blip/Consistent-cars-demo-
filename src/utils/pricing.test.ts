@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { calculateDynamicPricing } from './pricing';
 
-test('calculateDynamicPricing applies base, distance, time, surge, fees, and discounts', () => {
+test('calculateDynamicPricing keeps included package distance and time free', () => {
   const breakdown = calculateDynamicPricing({
     basePrice: 50,
     kilometers: 18,
@@ -19,11 +19,29 @@ test('calculateDynamicPricing applies base, distance, time, surge, fees, and dis
   });
 
   assert.equal(breakdown.baseFare, 50);
-  assert.equal(breakdown.distanceCharge, 216);
-  assert.equal(breakdown.timeCharge, 60);
-  assert.equal(breakdown.surgeAmount, 97.8);
+  assert.equal(breakdown.distanceCharge, 0);
+  assert.equal(breakdown.timeCharge, 0);
+  assert.equal(breakdown.surgeAmount, 15);
   assert.equal(breakdown.platformFee, 15);
-  assert.equal(breakdown.taxAmount, 52.66);
+  assert.equal(breakdown.taxAmount, 9.6);
   assert.equal(breakdown.discountAmount, 20);
-  assert.equal(breakdown.totalCost, 471.46);
+  assert.equal(breakdown.totalCost, 120);
+});
+
+test('calculateDynamicPricing charges only extras beyond the package', () => {
+  const breakdown = calculateDynamicPricing({
+    basePrice: 1800,
+    kilometers: 100,
+    minutes: 540,
+    pricePerKm: 16,
+    pricePerMinute: 2.5,
+    baseKm: 80,
+    driverAllowance: 0,
+    platformFee: 0,
+    taxRate: 0,
+  });
+
+  assert.equal(breakdown.distanceCharge, 320);
+  assert.equal(breakdown.timeCharge, 150);
+  assert.equal(breakdown.totalCost, 2270);
 });

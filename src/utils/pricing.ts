@@ -104,12 +104,13 @@ export function calculateDynamicPricing({
   const localShortTrip = !isPackageTrip && normalizedKm <= 40 && normalizedMinutes <= 90;
   const packageBasePrice = basePrice ?? vehicleTier.baseFare;
   const baseFare = packageBasePrice;
+  // Package prices already include the included kilometres and hours.
   const distanceCharge = isPackageTrip
     ? Math.max(normalizedKm - baseKm, 0) * ratePerKm
-    : normalizedKm * ratePerKm;
+    : 0;
   const timeCharge = isPackageTrip
     ? Math.max(normalizedMinutes - packageDurationMinutes, 0) * ratePerMinute
-    : normalizedMinutes * ratePerMinute;
+    : 0;
   const extraKm = Math.max(normalizedKm - baseKm, 0);
   const extraCharge = extraKm * ratePerKm;
   const subtotal = baseFare + distanceCharge + timeCharge;

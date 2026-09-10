@@ -1,24 +1,10 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
-import QRCode from "qrcode";
 
 const Pay = ({ amount, name, email, phone, bookingDetails }) => {
-  const [paymentQr, setPaymentQr] = useState("");
-
-  useEffect(() => {
-    const paymentLink = process.env.NEXT_PUBLIC_RAZORPAY_PAYMENT_LINK;
-    const upiId = process.env.NEXT_PUBLIC_UPI_ID;
-    if ((!paymentLink && !upiId) || !amount) return;
-
-    const paymentUri = paymentLink
-      ? `${paymentLink}${paymentLink.includes("?") ? "&" : "?"}amount=${encodeURIComponent(Number(amount).toFixed(2))}`
-      : `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent("Consistent Cars")}&am=${encodeURIComponent(Number(amount).toFixed(2))}&cu=INR&tn=${encodeURIComponent(`Consistent Cars ${bookingDetails?.vehicle || "Cab booking"}`)}`;
-    QRCode.toDataURL(paymentUri, { width: 240, margin: 2 })
-      .then(setPaymentQr)
-      .catch((error) => console.error("Payment QR generation failed:", error));
-  }, [amount, bookingDetails?.vehicle]);
+  const isTestMode = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID?.startsWith("rzp_test_");
 
   useEffect(() => {
     // Load Razorpay script
@@ -59,10 +45,14 @@ const Pay = ({ amount, name, email, phone, bookingDetails }) => {
       }
 
       // Step 1: Create order on backend
-      const orderResponse = await fetch('/api/razorpay', {
+      const orderResponse = await fetch('/api/create-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: amount })
+        body: JSON.stringify({
+          amount: Math.round(Number(amount) * 100),
+          currency: 'INR',
+          receipt: `cc_${Date.now()}`,
+        })
       });
 
       if (!orderResponse.ok) {
@@ -72,24 +62,34 @@ const Pay = ({ amount, name, email, phone, bookingDetails }) => {
 
       const order = await orderResponse.json();
 
-      if (!order?.id || !order?.amount) {
+      if (!order?.order_id || !order?.amount) {
         throw new Error('Invalid payment order returned from server');
       }
 
       // Step 2: Razorpay options with order_id
       const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        key: order.key_id || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
         amount: order.amount,
         currency: order.currency,
         name: "Consistent Cars",
         description: `Booking: ${bookingDetails?.vehicle || 'Vehicle'}`,
-        image: "/image/logo.png",
-        order_id: order.id, // This is required!
+        order_id: order.order_id,
         handler: async function (response) {
-          // Payment Success
-          console.log("Razorpay Response:", response);
-
           try {
+            const verificationResponse = await fetch('/api/verify-payment', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+              }),
+            });
+            const verificationResult = await verificationResponse.json().catch(() => ({}));
+            if (!verificationResponse.ok || !verificationResult.success) {
+              throw new Error(verificationResult?.error || 'Payment verification failed');
+            }
+
             const bookingResponse = await fetch('/api/bookings', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -123,8 +123,27 @@ const Pay = ({ amount, name, email, phone, bookingDetails }) => {
           email: email,
           contact: phone,
         },
+        ...(isTestMode ? {
+          config: {
+            display: {
+              blocks: {
+                card: {
+                  name: "Pay using Razorpay test card",
+                  instruments: [{ method: "card" }],
+                },
+              },
+              sequence: ["block.card"],
+              preferences: { show_default_blocks: false },
+            },
+          },
+        } : {}),
         theme: {
           color: "#0891b2", // Cyan-600
+        },
+        modal: {
+          ondismiss: function () {
+            alert("Payment was cancelled. Your booking was not confirmed.");
+          },
         },
       };
 
@@ -136,7 +155,8 @@ const Pay = ({ amount, name, email, phone, bookingDetails }) => {
       // Open Razorpay modal
       const rzp = new window.Razorpay(options);
       rzp.on("payment.failed", function (response) {
-        alert("Payment failed. Please try again.");
+        const reason = response?.error?.description || response?.error?.reason || "Please try again.";
+        alert(`Payment failed: ${reason}`);
         console.error(response.error);
       });
 
@@ -240,12 +260,6 @@ const Pay = ({ amount, name, email, phone, bookingDetails }) => {
 
   return (
     <div className="space-y-3">
-      {paymentQr && (
-        <div className="rounded-xl bg-white p-4 text-center text-slate-900">
-          <img src={paymentQr} alt="Scan to pay by UPI" className="mx-auto h-48 w-48" />
-          <p className="mt-2 text-xs font-semibold">Scan to pay ₹{Number(amount).toLocaleString()} via Razorpay</p>
-        </div>
-      )}
       <button
         onClick={handlePayment}
         type="button"
@@ -253,6 +267,11 @@ const Pay = ({ amount, name, email, phone, bookingDetails }) => {
       >
         Confirm & Pay ₹{amount.toLocaleString()}
       </button>
+      {isTestMode && (
+        <p className="text-center text-xs text-amber-200">
+          Test mode: use Razorpay test card 4100 2800 0000 1007, CVV 123, expiry 12/26, or test UPI test@razorpay. Real Google Pay/UPI will not complete test payments.
+        </p>
+      )}
     </div>
   );
 };

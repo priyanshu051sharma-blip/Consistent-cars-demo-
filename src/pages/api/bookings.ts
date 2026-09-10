@@ -36,15 +36,32 @@ const sendBookingEmail = async (email: string, bookingDetails: any, amount: numb
     return;
   }
 
+  const totalAmount = Number(bookingDetails?.totalAmount || amount);
+  const balanceAmount = Math.max(0, totalAmount - amount);
+  const invoiceHtml = `<!doctype html><html><body style="font-family:Arial,sans-serif;color:#172033"><h1>Consistent Cars</h1><h2>Booking Invoice</h2><p><strong>Customer:</strong> ${escapeHtml(bookingDetails?.name || email)}</p><p><strong>Vehicle:</strong> ${escapeHtml(bookingDetails?.vehicle || 'Car')}</p><p><strong>Route:</strong> ${escapeHtml(bookingDetails?.route || 'Not provided')}</p><p><strong>Trip:</strong> ${escapeHtml(bookingDetails?.tripType || 'One-way')}</p><p><strong>Date:</strong> ${escapeHtml(`${bookingDetails?.date || ''} ${bookingDetails?.time || ''}`)}</p><hr><p><strong>Total booking amount:</strong> Rs. ${totalAmount.toFixed(2)}</p><p><strong>Paid:</strong> Rs. ${amount.toFixed(2)}</p><p><strong>Balance:</strong> Rs. ${balanceAmount.toFixed(2)}</p></body></html>`;
+
   const message = {
     from: process.env.EMAIL_FROM || 'Consistent Cars <no-reply@consistentcars.com>',
     to: email,
     subject: 'Your Consistent Cars Booking Confirmation',
-    text: `Thank you for booking with Consistent Cars!\n\nBooking details:\nVehicle: ${bookingDetails.vehicle}\nRoute: ${bookingDetails.route}\nTrip: ${bookingDetails.tripType || 'One-way'}\nDate & Time: ${bookingDetails.date} ${bookingDetails.time}\nDuration: ${bookingDetails.duration} hours\nAmount: ₹${amount.toFixed(2)}\n\nWe will contact you shortly with the driver details.`,
+    text: `Thank you for booking with Consistent Cars!\n\nVehicle: ${bookingDetails.vehicle}\nRoute: ${bookingDetails.route}\nTrip: ${bookingDetails.tripType || 'One-way'}\nDate & Time: ${bookingDetails.date} ${bookingDetails.time}\nDuration: ${bookingDetails.duration} hours\nTotal: Rs. ${totalAmount.toFixed(2)}\nPaid: Rs. ${amount.toFixed(2)}\nBalance: Rs. ${balanceAmount.toFixed(2)}`,
+    html: invoiceHtml,
+    attachments: [{
+      filename: 'consistent-cars-invoice.html',
+      content: invoiceHtml,
+      contentType: 'text/html',
+    }],
   };
 
   await transporter.sendMail(message);
 };
+
+const escapeHtml = (value: unknown) => String(value ?? '')
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#039;');
 
 const sendBookingSms = async (phone: string, bookingDetails: any, amount: number) => {
   const client = createTwilioClient();

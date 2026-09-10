@@ -30,6 +30,15 @@ type Location = {
   description: string
 };
 
+const serviceImage = (image: string) => {
+  const fallbackImages: Record<string, string> = {
+    "/image/delhi.jpg": "/image/city.png",
+    "/image/pune.jpg": "/image/pune-city.jpg",
+  };
+
+  return fallbackImages[image] || image;
+};
+
 interface ServiceProps {
   cars: Car[];
   locations: Location[];
@@ -120,7 +129,7 @@ export default function Service({ cars, locations }: ServiceProps) {
               onClick={() => handleLocationSelect(loc)}
             >
               <Image
-                src={loc.image}
+                src={serviceImage(loc.image)}
                 alt={loc.name}
                 fill
                 className="object-cover transition-transform duration-700 group-hover:scale-110"
@@ -148,20 +157,25 @@ export default function Service({ cars, locations }: ServiceProps) {
 }
 
 export const getServerSideProps: GetServerSideProps = async () => {
+  const fallbackLocations = [
+    { id: 'pune', name: 'Pune', image: '/image/pune-city.jpg', description: 'Pune city and airport rides.' },
+    { id: 'delhi', name: 'Delhi', image: '/image/city.png', description: 'Delhi, Gurgaon, and Noida rides.' },
+  ];
+
   try {
     const locations = await prisma.location.findMany();
     const cars = await prisma.car.findMany();
 
     return {
       props: {
-        locations: JSON.parse(JSON.stringify(locations)),
+        locations: JSON.parse(JSON.stringify(locations.length ? locations : fallbackLocations)),
         cars: JSON.parse(JSON.stringify(cars)),
       },
     };
   } catch (error) {
     console.error("Error fetching data:", error);
     return {
-      props: { locations: [], cars: [] }
+      props: { locations: fallbackLocations, cars: [] }
     }
   }
 };

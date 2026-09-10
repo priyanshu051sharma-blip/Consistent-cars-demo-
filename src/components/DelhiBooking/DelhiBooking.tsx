@@ -74,6 +74,9 @@ const DelhiBooking = ({ cityName = "Delhi" }: DelhiBookingProps) => {
         duration: string;
         trafficMultiplier?: number;
         trafficAvailable?: boolean;
+        routeCoordinates?: [number, number][];
+        originCoordinates?: [number, number];
+        destinationCoordinates?: [number, number];
     } | null>(null);
 
     const [calculatingDistance, setCalculatingDistance] = useState(false);
@@ -364,6 +367,9 @@ const DelhiBooking = ({ cityName = "Delhi" }: DelhiBookingProps) => {
                                     origin={contactDetails.pickupLocation}
                                     destination={contactDetails.dropLocation}
                                     city={cityName}
+                                    routeCoordinates={distanceData?.routeCoordinates}
+                                    originCoordinates={distanceData?.originCoordinates}
+                                    destinationCoordinates={distanceData?.destinationCoordinates}
                                 />
                             </div>
                         </div>

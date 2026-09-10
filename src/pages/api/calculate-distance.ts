@@ -8,6 +8,9 @@ interface DistanceResult {
     trafficDuration?: string;
     trafficMultiplier?: number;
     trafficAvailable?: boolean;
+    routeCoordinates?: [number, number][];
+    originCoordinates?: [number, number];
+    destinationCoordinates?: [number, number];
 }
 
 interface NormalizedLocation {
@@ -35,7 +38,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     try {
-        const apiKey = process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+        const configuredKey = process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+        const apiKey = configuredKey && !configuredKey.includes('YourGoogleMapsAPIKey') && !configuredKey.includes('your_google_maps')
+            ? configuredKey
+            : undefined;
         const hasValidGoogleKey = Boolean(apiKey && !apiKey.includes('YourGoogleMapsAPIKeyHere'));
         const normalizedLocations = await normalizeLocations(origin, destination);
         const finalOrigin = normalizedLocations?.origin ?? origin;
@@ -68,11 +74,11 @@ async function normalizeLocations(origin: string, destination: string): Promise<
     const hfKey = process.env.HUGGINGFACE_API_KEY;
     const openAiKey = process.env.OPENAI_API_KEY;
 
-    if (hfKey) {
+    if (hfKey && !hfKey.startsWith('your_')) {
         return normalizeWithHuggingFace(origin, destination, hfKey);
     }
 
-    if (openAiKey) {
+    if (openAiKey && !openAiKey.startsWith('your_')) {
         return normalizeWithOpenAI(origin, destination, openAiKey);
     }
 
@@ -231,13 +237,13 @@ async function getDistanceFromOpenStreetMap(origin: string, destination: string)
     const originCandidates = selectTopCandidates(originData, 3);
     const destinationCandidates = selectTopCandidates(destinationData, 3);
 
-    let bestRoute: { distance: number; duration: number; provider: string } | null = null;
+    let bestRoute: { distance: number; duration: number; provider: string; routeCoordinates?: [number, number][]; originCoordinates: [number, number]; destinationCoordinates: [number, number] } | null = null;
 
     for (const o of originCandidates) {
         for (const d of destinationCandidates) {
             try {
                 const routeResponse = await fetch(
-                    `https://router.project-osrm.org/route/v1/driving/${o.lon},${o.lat};${d.lon},${d.lat}?overview=false`,
+                    `https://router.project-osrm.org/route/v1/driving/${o.lon},${o.lat};${d.lon},${d.lat}?overview=full&geometries=geojson`,
                     { headers: { Accept: 'application/json' } }
                 );
                 const routeData = await routeResponse.json();
@@ -247,7 +253,10 @@ async function getDistanceFromOpenStreetMap(origin: string, destination: string)
                         bestRoute = {
                             distance: route.distance,
                             duration: route.duration,
-                            provider: 'openstreetmap'
+                            provider: 'openstreetmap',
+                            routeCoordinates: route.geometry?.coordinates,
+                            originCoordinates: [Number(o.lat), Number(o.lon)],
+                            destinationCoordinates: [Number(d.lat), Number(d.lon)],
                         };
                     }
                 }
@@ -265,6 +274,9 @@ async function getDistanceFromOpenStreetMap(origin: string, destination: string)
             provider: bestRoute.provider,
             trafficAvailable: false,
             trafficMultiplier: 1,
+            routeCoordinates: bestRoute.routeCoordinates,
+            originCoordinates: bestRoute.originCoordinates,
+            destinationCoordinates: bestRoute.destinationCoordinates,
         };
     }
 
@@ -282,7 +294,7 @@ async function getDistanceFromOpenStreetMap(origin: string, destination: string)
     if (!bestPair) throw new Error('No valid geocode pair found');
 
     const routeResponse = await fetch(
-        `https://router.project-osrm.org/route/v1/driving/${bestPair.o.lon},${bestPair.o.lat};${bestPair.d.lon},${bestPair.d.lat}?overview=false`,
+        `https://router.project-osrm.org/route/v1/driving/${bestPair.o.lon},${bestPair.o.lat};${bestPair.d.lon},${bestPair.d.lat}?overview=full&geometries=geojson`,
         { headers: { Accept: 'application/json' } }
     );
 
@@ -300,6 +312,9 @@ async function getDistanceFromOpenStreetMap(origin: string, destination: string)
         provider: 'openstreetmap',
         trafficAvailable: false,
         trafficMultiplier: 1,
+        routeCoordinates: route.geometry?.coordinates,
+        originCoordinates: [Number(bestPair.o.lat), Number(bestPair.o.lon)],
+        destinationCoordinates: [Number(bestPair.d.lat), Number(bestPair.d.lon)],
     };
 }
 

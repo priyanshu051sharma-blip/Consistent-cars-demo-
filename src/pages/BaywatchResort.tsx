@@ -144,10 +144,14 @@ export default function BaywatchResort() {
 
     try {
       // Step 1: Create order on backend
-      const orderResponse = await fetch('/api/razorpay', {
+      const orderResponse = await fetch('/api/create-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: grandTotal })
+        body: JSON.stringify({
+          amount: Math.round(grandTotal * 100),
+          currency: 'INR',
+          receipt: `resort_${Date.now()}`,
+        })
       });
 
       if (!orderResponse.ok) {
@@ -164,8 +168,17 @@ export default function BaywatchResort() {
         name: "Baywatch Resort",
         description: `Booking for ${selectedRoom.name}`,
         image: "/image/logo.png",
-        order_id: order.id, // Required for proper payment flow
-        handler: function (response: any) {
+        order_id: order.order_id,
+        handler: async function (response: any) {
+          const verificationResponse = await fetch('/api/verify-payment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(response),
+          });
+          const verification = await verificationResponse.json();
+          if (!verificationResponse.ok || !verification.success) {
+            throw new Error(verification.error || 'Payment verification failed');
+          }
           setPaymentComplete(true);
           generatePDF();
           alert("Payment successful! Your invoice has been generated.");

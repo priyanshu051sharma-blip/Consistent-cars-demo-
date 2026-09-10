@@ -76,6 +76,9 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
         duration: string;
         trafficMultiplier?: number;
         trafficAvailable?: boolean;
+        routeCoordinates?: [number, number][];
+        originCoordinates?: [number, number];
+        destinationCoordinates?: [number, number];
     } | null>(null);
 
     const [contactDetails, setContactDetails] = useState({
@@ -313,23 +316,21 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
         setMatchedPricing(chosen || null);
     }, [selectedCar, selectedLocation, pricingList, kilometers]);
 
-    const pricingBreakdown = matchedPricing
+    const pricingBreakdown = selectedCar
         ? calculateDynamicPricing({
-            basePrice: matchedPricing.basePrice,
+            basePrice: undefined,
             kilometers,
             minutes: distanceData ? parseDurationToMinutes(distanceData.duration, kilometers) : 60,
             vehicleType: selectedCar?.type || selectedCar?.name,
-            pricePerKm: matchedPricing.pricePerKm,
-            pricePerMinute: matchedPricing.extraHourRate ? matchedPricing.extraHourRate / 60 : undefined,
-            baseKm: matchedPricing.baseKm,
-            driverAllowance: matchedPricing.driverAllowance,
+            baseKm: 0,
+            driverAllowance: 0,
             surgeMultiplier: getDemandMultiplier(date, time) * (distanceData?.trafficMultiplier || 1),
-            platformFee: 15,
-            taxRate: 0.12,
+            platformFee: 0,
+            taxRate: 0,
             discounts: 0,
-            advanceBookingThreshold: 25,
+            advanceBookingThreshold: Number.MAX_SAFE_INTEGER,
             advanceBookingPercent: 0,
-            tripMultiplier: tripType === 'one-way' ? 1.15 : 1.0,
+            tripMultiplier: 1,
             minAdvanceAmount: 300,
         })
         : null;
@@ -547,6 +548,9 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
                                     origin={pickupLocation}
                                     destination={dropLocation}
                                     city={selectedLocation?.name}
+                                    routeCoordinates={distanceData?.routeCoordinates}
+                                    originCoordinates={distanceData?.originCoordinates}
+                                    destinationCoordinates={distanceData?.destinationCoordinates}
                                 />
                                 <div className="mt-4">
                                     <label className="text-sm text-slate-400 mb-1 block">Estimated Distance (km)</label>
@@ -822,16 +826,32 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
 }
 
 export const getServerSideProps: GetServerSideProps = async () => {
-    const locations = await prisma.location.findMany();
-    const allCars = await prisma.car.findMany();
-    
-    // Show only first 2 cars
-    const cars = allCars.slice(0, 2);
+    const fallbackLocations = [
+        { id: 'pune', name: 'Pune', image: '/image/pune-city.jpg', description: 'Pune city and airport rides.' },
+        { id: 'delhi', name: 'Delhi', image: '/image/city.png', description: 'Delhi, Gurgaon, and Noida rides.' },
+    ];
+    const fallbackCars = [
+        { id: 'dzire', name: 'Etios/Dzire', baseDayPrice: 1800, image: '/image/dzire.png', type: 'Sedan', seats: 4, features: 'AC,Comfortable seating' },
+        { id: 'crysta', name: 'Toyota Innova Crysta', baseDayPrice: 3800, image: '/image/crysta-white.jpg', type: 'SUV', seats: 7, features: 'AC,Extra space' },
+    ];
+
+    try {
+        const locations = await prisma.location.findMany();
+        const allCars = await prisma.car.findMany();
+        return {
+            props: {
+                locations: JSON.parse(JSON.stringify(locations.length ? locations : fallbackLocations)),
+                cars: JSON.parse(JSON.stringify((allCars.length ? allCars : fallbackCars).slice(0, 2))),
+            },
+        };
+    } catch (error) {
+        console.error('Booking data unavailable, using local fallback:', error);
+    }
 
     return {
         props: {
-            locations: JSON.parse(JSON.stringify(locations)),
-            cars: JSON.parse(JSON.stringify(cars)),
+            locations: fallbackLocations,
+            cars: fallbackCars,
         },
     };
 };
