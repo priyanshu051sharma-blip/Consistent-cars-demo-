@@ -32,7 +32,7 @@ const Footer: React.FC = () => {
             </div>
           </Link>
           <p className="text-sm text-gray-400">
-            Reliable car rentals for every journey.
+            Clean and comfortable cabs for every journey.
           </p>
         </div>
 

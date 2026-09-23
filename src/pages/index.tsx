@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Calendar, Phone, ArrowRight, Star, ShieldCheck, MapPin } from "lucide-react";
+import { Calendar, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import WhyChooseUs from "@/components/Why Choose Us/whychooseus"; // Assuming this component exists or will be updated independently
@@ -94,17 +94,12 @@ const Home: React.FC = () => {
             <p className="text-slate-400 text-lg">We prioritize your comfort and safety above all else.</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 gap-8 max-w-2xl mx-auto">
             {[
               {
                 icon: Calendar,
-                title: "Flexible Booking",
-                desc: "Book by the hour, day, or week. Easy modifications and transparent pricing with no hidden fees."
-              },
-              {
-                icon: ShieldCheck,
-                title: "Reliable",
-                desc: "Round-the-clock support and roadside assistance ensuring you never face a problem alone."
+                title: "Book in Advance",
+                desc: "Please book before time for immediate confirmation and timely arrival during peak hours. Customers making last-minute bookings might face confirmation issues."
               }
             ].map((feature, idx) => (
               <motion.div

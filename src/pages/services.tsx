@@ -108,7 +108,7 @@ export default function Service({ cars, locations }: ServiceProps) {
               </div>
               <h3 className="text-2xl font-bold text-white mb-2 group-hover:text-cyan-300 transition-colors">Airport Drop</h3>
               <p className="text-slate-300 text-sm leading-relaxed mb-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-100 line-clamp-2">
-                Reliable and timely airport transfers to ensure you never miss a flight.
+                Timely airport transfers to help ensure you never miss a flight.
               </p>
               <div className="flex items-center gap-2 text-cyan-400 text-sm font-semibold uppercase tracking-wider">
                 Book Now <ArrowRight size={16} />

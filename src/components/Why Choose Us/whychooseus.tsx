@@ -29,7 +29,7 @@ const features = [
   {
     icon: FaCarSide,
     title: "Clean Cabs",
-    description: "Hygienic and well-maintained cars for your comfort.",
+    description: "All our cabs are clean and well-maintained for your comfort.",
   },
   {
     icon: FaBalanceScale,

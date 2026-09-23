@@ -47,10 +47,10 @@ const About: React.FC = () => {
             <h2 className="text-3xl font-bold text-white border-l-4 border-cyan-500 pl-4">Our Journey</h2>
             <div className="text-slate-300 space-y-4 leading-relaxed text-lg">
               <p>
-                Consistent Cars (CC) was started in Pune in 2006 by Himanshu Mandke, a professional from Travel industry. He had the experience of working in major companies like Cox&amp;Kings, Orix and Travel House. After gaining experience for about ten years, he started CC with one cab and one corporate customer.
+                Consistent Cars (CC) was started in Pune in 2006 by Himanshu Mandke, a professional from the travel industry. He gained experience working with major companies like Cox &amp; Kings, Orix, and International Travel House before deciding to start CC with one cab and one corporate customer.
               </p>
               <p>
-                Over a period of 20 years, CC has served many corporate customers and has established a reputation for a safe and reliable auto rental company in Pune market. The Company has now expanded its service to individual customers and extended its market to Delhi.
+                Over a period of 20 years, CC has served many corporate customers and established itself as an auto rental company in the Pune market. The company has now expanded its service to individual customers and extended its market to Delhi.
               </p>
               <p>
                 Pune and Delhi are the two hubs where CC operates and serves the customers for local and out-station travel from these two Metro cities.
@@ -111,16 +111,8 @@ const About: React.FC = () => {
                 desc: "Timely airport transfers and corporate travel solutions for professionals who value punctuality.",
               },
               {
-                title: "Tourists & Vacationers",
-                desc: "Hassle-free journeys to Konkan, Goa, and Mahabaleshwar. Relax and enjoy the view.",
-              },
-              {
                 title: "Families & Groups",
-                desc: "Spacious SUVs and vans ensuring comfort for everyone on weekend getaways and family trips.",
-              },
-              {
-                title: "Locals & Residents",
-                desc: "Dependable intercity travel and special event transport for the people of Pune.",
+                desc: "Comfortable travel for families and groups going on holiday, weekend getaways, and memorable trips.",
               },
             ].map((item, idx) => (
               <motion.div
