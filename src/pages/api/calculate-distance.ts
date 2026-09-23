@@ -60,13 +60,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(200).json(osmResult);
     } catch (error) {
         console.error('Distance calculation error:', error);
-        const approximateDistance = estimateDistance(origin, destination);
-        return res.status(200).json({
-            distance: approximateDistance * 1000,
-            duration: `${Math.ceil(approximateDistance / 40)} hrs`,
-            estimated: true,
-            provider: 'fallback'
-        });
+        return res.status(422).json({ error: 'Unable to calculate an exact driving route for these locations.' });
     }
 }
 

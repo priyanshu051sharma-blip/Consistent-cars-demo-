@@ -80,8 +80,24 @@ const DelhiBooking = ({ cityName = "Delhi" }: DelhiBookingProps) => {
     } | null>(null);
 
     const [calculatingDistance, setCalculatingDistance] = useState(false);
+    const [pickupSuggestions, setPickupSuggestions] = useState<string[]>([]);
+    const [dropSuggestions, setDropSuggestions] = useState<string[]>([]);
 
     const locationExamples = getLocationExamples(cityName);
+
+    const searchLocations = async (query: string, setSuggestions: (values: string[]) => void) => {
+        if (query.trim().length < 2) {
+            setSuggestions([]);
+            return;
+        }
+        try {
+            const response = await fetch(`/api/location-search?q=${encodeURIComponent(query)}&city=${encodeURIComponent(cityName)}`);
+            const results = await response.json();
+            setSuggestions(Array.isArray(results) ? results.map((place) => place.displayName) : []);
+        } catch {
+            setSuggestions([]);
+        }
+    };
 
     useEffect(() => {
         fetchPricing();
@@ -107,10 +123,12 @@ const DelhiBooking = ({ cityName = "Delhi" }: DelhiBookingProps) => {
             });
 
             const data = await response.json();
-            if (data.distance && data.duration) {
+            if (data.distance && data.duration && !data.estimated) {
                 setDistanceData(data);
                 const distanceInKm = Math.ceil(data.distance / 1000);
                 handleKmChange(distanceInKm);
+            } else if (data.estimated) {
+                alert("We could not find an exact driving route. Please select a more specific location.");
             }
         } catch (error) {
             console.error("Failed to calculate distance:", error);
@@ -337,19 +355,37 @@ const DelhiBooking = ({ cityName = "Delhi" }: DelhiBookingProps) => {
                                     placeholder={locationExamples.pickupPlaceholder}
                                     value={contactDetails.pickupLocation}
                                     onChange={(e) =>
-                                        setContactDetails({ ...contactDetails, pickupLocation: e.target.value })
+                                        (setContactDetails({ ...contactDetails, pickupLocation: e.target.value }), void searchLocations(e.target.value, setPickupSuggestions))
                                     }
                                     className="w-full p-3 bg-gray-700 text-white rounded-lg border border-gray-600 focus:border-cyan-500"
                                 />
+                                {pickupSuggestions.length > 0 && (
+                                    <div className="max-h-52 overflow-y-auto bg-gray-700 rounded-lg border border-gray-600">
+                                        {pickupSuggestions.map((suggestion) => (
+                                            <button key={suggestion} type="button" onMouseDown={() => { setContactDetails({ ...contactDetails, pickupLocation: suggestion }); setPickupSuggestions([]); }} className="block w-full p-3 text-left text-sm text-white hover:bg-cyan-600">
+                                                {suggestion}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
                                 <input
                                     type="text"
                                     placeholder={locationExamples.dropPlaceholder}
                                     value={contactDetails.dropLocation}
                                     onChange={(e) =>
-                                        setContactDetails({ ...contactDetails, dropLocation: e.target.value })
+                                        (setContactDetails({ ...contactDetails, dropLocation: e.target.value }), void searchLocations(e.target.value, setDropSuggestions))
                                     }
                                     className="w-full p-3 bg-gray-700 text-white rounded-lg border border-gray-600 focus:border-cyan-500"
                                 />
+                                {dropSuggestions.length > 0 && (
+                                    <div className="max-h-52 overflow-y-auto bg-gray-700 rounded-lg border border-gray-600">
+                                        {dropSuggestions.map((suggestion) => (
+                                            <button key={suggestion} type="button" onMouseDown={() => { setContactDetails({ ...contactDetails, dropLocation: suggestion }); setDropSuggestions([]); }} className="block w-full p-3 text-left text-sm text-white hover:bg-cyan-600">
+                                                {suggestion}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
                                 {calculatingDistance && (
                                     <p className="text-cyan-400 text-sm">Calculating distance...</p>
                                 )}

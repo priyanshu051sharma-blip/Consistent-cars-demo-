@@ -119,43 +119,30 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
         }
     }, [pickupLocation, dropLocation, date, time]);
 
-    const commonPlaceSuggestions: string[] = [
-        'Pune Airport',
-        'Baner',
-        'Kharadi',
-        'Viman Nagar',
-        'Hinjewadi',
-        'Aundh',
-        'Koregaon Park',
-        'Shivaji Nagar',
-        'Connaught Place',
-        'India Gate',
-        'Gurgaon',
-        'Noida',
-        'Indira Gandhi Airport',
-        'Delhi Airport',
-        'MGF Metropolitan Mall',
-        'DLF Mega Mall',
-        'Pacific Mall',
-    ];
-
     const getMatchingSuggestions = (query: string, excludeName?: string) => {
-        if (!query.trim()) return [] as Location[];
+        if (!query.trim()) return locations.map((loc) => ({ ...loc }));
         const lower = query.toLowerCase();
 
         const locationMatches = locations
             .filter(loc => loc.name.toLowerCase().includes(lower) && loc.name.toLowerCase() !== excludeName?.toLowerCase())
-            .slice(0, 5)
             .map(loc => ({ ...loc }));
+        return locationMatches;
+    };
 
-        const extraMatches = commonPlaceSuggestions
-            .filter(item => item.toLowerCase().includes(lower) && item.toLowerCase() !== excludeName?.toLowerCase())
-            .slice(0, 5)
-            .map((name, index) => ({ id: `common-${index}-${name}`, name, image: '', description: '' }));
-
-        const combined = [...locationMatches, ...extraMatches];
-        const unique = Array.from(new Map(combined.map(item => [item.name.toLowerCase(), item])).values());
-        return unique.slice(0, 6);
+    const searchPlaces = async (query: string, city: string, excludeName?: string): Promise<Location[]> => {
+        if (query.trim().length < 2) {
+            return getMatchingSuggestions(query, excludeName);
+        }
+        try {
+            const response = await fetch(`/api/location-search?q=${encodeURIComponent(query)}&city=${encodeURIComponent(city)}`);
+            const places = await response.json();
+            const results = Array.isArray(places) ? places
+                .filter((place) => place.displayName.toLowerCase() !== excludeName?.toLowerCase())
+                .map((place) => ({ id: place.id, name: place.displayName, image: '', description: '' })) : [];
+            return results.length ? results : getMatchingSuggestions(query, excludeName);
+        } catch {
+            return getMatchingSuggestions(query, excludeName);
+        }
     };
 
     const inferLocationNameFromInputs = (pickup: string, drop: string) => {
@@ -170,13 +157,15 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
     const handlePickupLocationChange = (value: string) => {
         setPickupLocation(value);
         setShowPickupSuggestions(true);
-        setPickupSuggestions(getMatchingSuggestions(value, dropLocation));
+        void searchPlaces(value, inferLocationNameFromInputs(value, dropLocation) || selectedLocation?.name || 'Delhi', dropLocation)
+            .then(setPickupSuggestions);
     };
 
     const handleDropLocationChange = (value: string) => {
         setDropLocation(value);
         setShowDropSuggestions(true);
-        setDropSuggestions(getMatchingSuggestions(value, pickupLocation));
+        void searchPlaces(value, inferLocationNameFromInputs(pickupLocation, value) || selectedLocation?.name || 'Delhi', pickupLocation)
+            .then(setDropSuggestions);
     };
 
     const selectPickupSuggestion = (suggestion: string) => {
@@ -212,15 +201,14 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
             });
 
             const data = await response.json();
-            if (data.distance && data.duration) {
+            if (data.distance && data.duration && !data.estimated) {
                 setDistanceData(data);
                 const distanceInKm = Math.ceil(data.distance / 1000);
                 setKilometers(distanceInKm);
                 setHours(parseDurationToHours(data.duration, distanceInKm));
 
-                if (data.provider === 'fallback') {
-                    alert('Distance could not be calculated precisely. Please refine the pickup/drop location.');
-                }
+            } else if (data.estimated) {
+                alert('We could not find an exact driving route. Please select a more specific location.');
             }
         } catch (error) {
             console.error("Failed to calculate distance:", error);
