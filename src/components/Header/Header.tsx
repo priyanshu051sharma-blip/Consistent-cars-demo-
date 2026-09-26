@@ -22,12 +22,12 @@ const Header: React.FC = () => {
   return (
     <header className="bg-gradient-to-r from-[#232526] via-[#2f2e2e] to-[#0f2027] shadow-lg relative z-10">
       <div className="h-1 w-full bg-gradient-to-r from-[#00ffff] via-[#00bfff] to-[#00ffff] animate-pulse" />
-      <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between relative">
-        <Link href="/" className="flex items-center space-x-3">
-          <div className="flex items-center space-x-3 flex-shrink-0">
+      <div className="relative mx-auto flex w-full max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-4">
+        <Link href="/" className="flex min-w-0 items-center">
+          <div className="flex min-w-0 items-center gap-2 sm:gap-3">
             <span className="relative">
               <svg
-                className="w-10 h-10 text-[#00ffff] drop-shadow-lg"
+                className="h-8 w-8 shrink-0 text-[#00ffff] drop-shadow-lg sm:h-10 sm:w-10"
                 fill="none"
                 stroke="currentColor"
                 strokeWidth={2}
@@ -39,7 +39,7 @@ const Header: React.FC = () => {
                 <path d="M5 11V7a2 2 0 012-2h10a2 2 0 012 2v4" />
               </svg>
             </span>
-            <span className="text-3xl font-extrabold text-white tracking-tight drop-shadow-lg">
+            <span className="whitespace-nowrap text-xl font-extrabold text-white tracking-tight drop-shadow-lg sm:text-3xl">
               Consistent
               <span className="text-[#00ffff] animate-pulse bg-gradient-to-r from-[#00ffff] via-[#00bfff] to-[#00ffff] bg-clip-text text-transparent drop-shadow-lg shadow-cyan-500/50 animate-gradient-x" style={{textShadow: '0 0 20px rgba(0, 255, 255, 0.8), 0 0 40px rgba(0, 191, 255, 0.6)'}}>
                 Cars
@@ -48,13 +48,13 @@ const Header: React.FC = () => {
           </div>
         </Link>
 
-        <div className="md:hidden">
+        <div className="shrink-0 md:hidden">
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="text-white hover:text-[#00ffff]"
+            className="flex h-11 w-11 items-center justify-center rounded-lg text-white hover:text-[#00ffff]"
             aria-label="Toggle menu"
           >
-            {mobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
+            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>
 
@@ -115,29 +115,29 @@ const Header: React.FC = () => {
       </div>
 
       {mobileMenuOpen && (
-        <div className="md:hidden px-6 pb-4">
-          <nav className="flex flex-col gap-3 mt-4">
+        <div className="px-4 pb-4 sm:px-6 md:hidden">
+          <nav className="mt-3 flex flex-col gap-1">
             <Link
               href="/hotels"
-              className="text-gray-200 hover:text-[#00ffff] text-lg font-medium"
+              className="flex min-h-11 items-center text-lg font-medium text-gray-200 hover:text-[#00ffff]"
             >
               Hotels
             </Link>
             <Link
               href="/services"
-              className="text-gray-200 hover:text-[#00ffff] text-lg font-medium"
+              className="flex min-h-11 items-center text-lg font-medium text-gray-200 hover:text-[#00ffff]"
             >
               Services
             </Link>
             <Link
               href="/about"
-              className="text-gray-200 hover:text-[#00ffff] text-lg font-medium"
+              className="flex min-h-11 items-center text-lg font-medium text-gray-200 hover:text-[#00ffff]"
             >
               About
             </Link>
             <Link
               href="/contact"
-              className="text-gray-200 hover:text-[#00ffff] text-lg font-medium"
+              className="flex min-h-11 items-center text-lg font-medium text-gray-200 hover:text-[#00ffff]"
             >
               Contact
             </Link>

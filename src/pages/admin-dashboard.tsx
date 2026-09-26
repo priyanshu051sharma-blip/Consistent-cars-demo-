@@ -140,16 +140,18 @@ export default function AdminDashboard() {
 
     // Details logic
     const isHotel = booking.type === 'Hotel';
-    const rate = isHotel ? details.basePrice || booking.amount : (booking.amount / (details.duration || 1));
+    const duration = Math.max(1, Number(details.duration) || 1);
+    const hotelBasePrice = Number(details.basePrice || booking.amount);
+    const rate = isHotel ? hotelBasePrice / duration : (booking.amount / duration);
     const desc = isHotel ? `Hotel Stay: ${details.route}` : `Vehicle Rental: ${details.vehicle}`;
-    const subDesc = isHotel ? `1 Night @ ${rate}` : `${details.duration || 1} Days @ ${rate}/day`;
+    const subDesc = isHotel ? `${duration} Night${duration > 1 ? 's' : ''} @ Rs. ${rate.toLocaleString()}/night` : `${details.duration || 1} Days @ ${rate}/day`;
 
     // Table
     doc.autoTable({
       startY: 105,
       head: [["Description", "Details", "Amount"]],
       body: [
-        [desc, subDesc, `Rs. ${(isHotel ? (details.basePrice || booking.amount) : booking.amount).toLocaleString()}`],
+        [desc, subDesc, `Rs. ${(isHotel ? hotelBasePrice : booking.amount).toLocaleString()}`],
         isHotel ? ["GST (12%)", "Tax", `Rs. ${(details.gstAmount || 0).toLocaleString()}`] : ["Taxes", "Included", "Rs. 0"],
       ],
       foot: [["", "Total", `Rs. ${booking.amount.toLocaleString()}`]],

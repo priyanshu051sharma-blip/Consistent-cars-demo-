@@ -9,15 +9,15 @@ const Contact = () => {
       {/* Background */}
       <div className="fixed top-[-20%] left-[-20%] w-[600px] h-[600px] bg-cyan-500/5 rounded-full blur-[120px] pointer-events-none" />
 
-      <div className="relative z-10 max-w-7xl mx-auto px-6 py-20 lg:px-20">
+      <div className="relative z-10 mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-20 lg:px-20">
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-16"
         >
-          <h2 className="text-5xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent mb-6">Get in Touch</h2>
-          <p className="text-xl text-slate-400 max-w-2xl mx-auto">
+          <h2 className="mb-6 bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-3xl font-bold text-transparent sm:text-5xl">Get in Touch</h2>
+          <p className="mx-auto max-w-2xl text-base text-slate-400 sm:text-xl">
             Whether you have a question about bookings, pricing, or just want to say hello, our team is ready to answer all your questions.
           </p>
         </motion.div>
@@ -32,36 +32,36 @@ const Contact = () => {
             className="space-y-10"
           >
             <div className="space-y-8">
-              <div className="flex items-start gap-6 group cursor-pointer p-4 rounded-2xl hover:bg-white/5 transition-all">
-                <div className="p-4 rounded-xl bg-blue-600/20 text-blue-400 group-hover:scale-110 transition-transform">
+              <div className="group flex min-w-0 cursor-pointer items-start gap-4 rounded-2xl p-3 transition-all hover:bg-white/5 sm:gap-6 sm:p-4">
+                <div className="shrink-0 rounded-xl bg-blue-600/20 p-3 text-blue-400 transition-transform group-hover:scale-110 sm:p-4">
                   <Phone size={24} />
                 </div>
-                <div>
-                  <h4 className="text-2xl font-bold text-white mb-2">Call Us</h4>
-                  <p className="text-slate-400 text-lg">+91 83088 06491, +91 86009 64138</p>
+                <div className="min-w-0 [overflow-wrap:anywhere]">
+                  <h4 className="mb-2 text-xl font-bold text-white sm:text-2xl">Call Us</h4>
+                  <p className="text-base text-slate-400 sm:text-lg">+91 83088 06491, +91 86009 64138</p>
                   <p className="text-slate-500 text-sm">Mon-Fri, 9am - 6pm</p>
                 </div>
               </div>
 
-              <div className="flex items-start gap-6 group cursor-pointer p-4 rounded-2xl hover:bg-white/5 transition-all">
-                <div className="p-4 rounded-xl bg-cyan-500/20 text-cyan-400 group-hover:scale-110 transition-transform">
+              <div className="group flex min-w-0 cursor-pointer items-start gap-4 rounded-2xl p-3 transition-all hover:bg-white/5 sm:gap-6 sm:p-4">
+                <div className="shrink-0 rounded-xl bg-cyan-500/20 p-3 text-cyan-400 transition-transform group-hover:scale-110 sm:p-4">
                   <Mail size={24} />
                 </div>
-                <div>
-                  <h4 className="text-2xl font-bold text-white mb-2">Email Us</h4>
-                  <p className="text-slate-400 text-lg">consistent.car@rediffmail.com</p>
+                <div className="min-w-0 [overflow-wrap:anywhere]">
+                  <h4 className="mb-2 text-xl font-bold text-white sm:text-2xl">Email Us</h4>
+                  <p className="text-base text-slate-400 sm:text-lg">consistent.car@rediffmail.com</p>
                   <p className="text-slate-500 text-sm">Online support 24/7</p>
                 </div>
               </div>
 
-              <div className="flex items-start gap-6 group cursor-pointer p-4 rounded-2xl hover:bg-white/5 transition-all">
-                <div className="p-4 rounded-xl bg-purple-600/20 text-purple-400 group-hover:scale-110 transition-transform">
+              <div className="group flex min-w-0 cursor-pointer items-start gap-4 rounded-2xl p-3 transition-all hover:bg-white/5 sm:gap-6 sm:p-4">
+                <div className="shrink-0 rounded-xl bg-purple-600/20 p-3 text-purple-400 transition-transform group-hover:scale-110 sm:p-4">
                   <MapPin size={24} />
                 </div>
-                <div>
-                  <h4 className="text-2xl font-bold text-white mb-2">Visit Us</h4>
-                  <p className="text-slate-400 text-lg">A2 Nikash Skies, Someshwar Wadi Pashan</p>
-                  <p className="text-slate-400 text-lg">Pune, Maharashtra 411008</p>
+                <div className="min-w-0 [overflow-wrap:anywhere]">
+                  <h4 className="mb-2 text-xl font-bold text-white sm:text-2xl">Visit Us</h4>
+                  <p className="text-base text-slate-400 sm:text-lg">A2 Nikash Skies, Someshwar Wadi Pashan</p>
+                  <p className="text-base text-slate-400 sm:text-lg">Pune, Maharashtra 411008</p>
                 </div>
               </div>
             </div>
@@ -83,9 +83,9 @@ const Contact = () => {
             initial={{ opacity: 0, x: 30 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.4 }}
-            className="bg-white/5 backdrop-blur-md border border-white/10 rounded-[2.5rem] p-8 md:p-12 shadow-2xl"
+            className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-2xl backdrop-blur-md sm:rounded-[2.5rem] sm:p-8 md:p-12"
           >
-            <h3 className="text-3xl font-bold text-white mb-8 flex items-center gap-3">
+            <h3 className="mb-8 flex items-center gap-3 text-2xl font-bold text-white sm:text-3xl">
               <MessageSquare className="text-cyan-400" /> Send a Message
             </h3>
 

@@ -335,6 +335,30 @@ async function fetchLocationCandidates(location: string, headers: Record<string,
             }
         }
     }
+
+    for (const query of queries) {
+        try {
+            const response = await fetch(
+                `https://photon.komoot.io/api/?limit=8&q=${encodeURIComponent(query)}`,
+                { headers }
+            );
+            if (!response.ok) continue;
+            const data = await response.json();
+            const candidates = Array.isArray(data?.features)
+                ? data.features.map((feature: any) => ({
+                    display_name: [feature.properties?.name, feature.properties?.city, feature.properties?.state, feature.properties?.country]
+                        .filter(Boolean).join(', '),
+                    lat: feature.geometry?.coordinates?.[1],
+                    lon: feature.geometry?.coordinates?.[0],
+                    importance: feature.properties?.importance || 0,
+                })).filter((place: any) => Number.isFinite(Number(place.lat)) && Number.isFinite(Number(place.lon)))
+                : [];
+            if (candidates.length > 0) return candidates;
+        } catch (error) {
+            console.warn(`Photon geocoding query failed for '${query}':`, error);
+        }
+    }
+
     return [];
 }
 

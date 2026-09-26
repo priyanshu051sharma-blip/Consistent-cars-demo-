@@ -335,7 +335,8 @@ export default function BaywatchResort() {
                 route: `Baywatch Resort - ${selectedRoom.name}`,
                 date: startDate,
                 time: '13:00',
-                duration: nights
+                duration: nights,
+                basePrice: total
               }}
             />
           </div>

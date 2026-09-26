@@ -16,7 +16,7 @@ const Home: React.FC = () => {
     <div className="w-full min-h-screen bg-[#0f172a] text-white font-sans overflow-x-hidden selection:bg-cyan-500/30">
 
       {/* Hero Section */}
-      <section className="relative w-full h-screen flex items-center justify-center overflow-hidden">
+      <section className="relative flex min-h-screen min-h-[100svh] w-full items-center justify-center overflow-hidden py-16 sm:py-20">
         {isClient && (
           <div className="absolute inset-0 w-full h-full z-0">
             <video
@@ -32,7 +32,7 @@ const Home: React.FC = () => {
         )}
 
         {/* Hero Content */}
-        <div className="relative z-10 text-center px-6 max-w-5xl mx-auto space-y-8">
+        <div className="relative z-10 mx-auto w-full max-w-5xl space-y-8 px-4 text-center sm:px-6">
           {/* Large Animated Logo */}
           <motion.div
             initial={{ opacity: 0, scale: 0.5 }}
@@ -41,14 +41,14 @@ const Home: React.FC = () => {
             className="mb-8"
           >
             <div className="inline-block">
-              <h2 className="text-7xl md:text-9xl font-black text-transparent bg-gradient-to-r from-cyan-400 via-blue-400 to-cyan-300 bg-clip-text drop-shadow-2xl" style={{textShadow: '0 0 60px rgba(0, 255, 255, 0.8), 0 0 120px rgba(0, 191, 255, 0.6)'}}>
+              <h2 className="text-4xl font-black text-transparent bg-gradient-to-r from-cyan-400 via-blue-400 to-cyan-300 bg-clip-text drop-shadow-2xl sm:text-6xl lg:text-8xl" style={{textShadow: '0 0 60px rgba(0, 255, 255, 0.8), 0 0 120px rgba(0, 191, 255, 0.6)'}}>
                 CONSISTENT
               </h2>
               <motion.div
                 animate={{ y: [0, -10, 0] }}
                 transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
               >
-                <h2 className="text-6xl md:text-8xl font-black text-transparent bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text" style={{textShadow: '0 0 50px rgba(0, 255, 255, 0.9)'}}>
+                <h2 className="text-4xl font-black text-transparent bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text sm:text-6xl lg:text-8xl" style={{textShadow: '0 0 50px rgba(0, 255, 255, 0.9)'}}>
                   CARS
                 </h2>
               </motion.div>
@@ -60,7 +60,7 @@ const Home: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
           >
-            <div className="inline-block mb-4 px-4 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-2xl font-semibold tracking-wider uppercase">
+            <div className="mb-4 inline-block max-w-full rounded-full border border-cyan-500/20 bg-cyan-500/10 px-3 py-2 text-base font-semibold uppercase text-cyan-400 sm:px-4 sm:py-1 sm:text-2xl">
               Consistent and Convenient
             </div>
             {/* Removed heading and description as requested */}
@@ -70,15 +70,15 @@ const Home: React.FC = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.8, duration: 0.8 }}
-            className="flex flex-col sm:flex-row gap-4 justify-center items-center"
+            className="mx-auto flex w-full max-w-sm flex-col items-center justify-center gap-4 sm:max-w-none sm:flex-row"
           >
             <Link href="/services">
-              <button className="px-8 py-4 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-bold text-lg transition-all shadow-[0_0_20px_rgba(6,182,212,0.4)] hover:shadow-[0_0_30px_rgba(6,182,212,0.6)] flex items-center gap-2 group">
+              <button className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-cyan-500 px-6 py-3 text-base font-bold text-black shadow-[0_0_20px_rgba(6,182,212,0.4)] transition-all hover:bg-cyan-400 hover:shadow-[0_0_30px_rgba(6,182,212,0.6)] group sm:w-auto sm:px-8 sm:py-4 sm:text-lg">
                 Book a Ride <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
               </button>
             </Link>
             <Link href="/about">
-              <button className="px-8 py-4 rounded-xl bg-white/5 hover:bg-white/10 text-white font-semibold text-lg border border-white/10 backdrop-blur-sm transition-all flex items-center gap-2">
+              <button className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-6 py-3 text-base font-semibold text-white backdrop-blur-sm transition-all hover:bg-white/10 sm:w-auto sm:px-8 sm:py-4 sm:text-lg">
                 Learn More
               </button>
             </Link>
