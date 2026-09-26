@@ -137,20 +137,6 @@ const Pay = ({ amount, name, email, phone, bookingDetails }) => {
           email: email,
           contact: phone,
         },
-        ...(isTestMode ? {
-          config: {
-            display: {
-              blocks: {
-                card: {
-                  name: "Pay using Razorpay test card",
-                  instruments: [{ method: "card" }],
-                },
-              },
-              sequence: ["block.card"],
-              preferences: { show_default_blocks: false },
-            },
-          },
-        } : {}),
         theme: {
           color: "#0891b2", // Cyan-600
         },
@@ -186,6 +172,15 @@ const Pay = ({ amount, name, email, phone, bookingDetails }) => {
     const isHotelBooking = bookingDetails?.vehicle === "Hotel Stay";
     const duration = Math.max(1, Number(bookingDetails?.duration) || 1);
     const hotelBasePrice = Number(bookingDetails?.basePrice ?? paidAmount);
+    const bookingTotal = Number(bookingDetails?.totalAmount ?? paidAmount);
+    const taxAmount = Number(bookingDetails?.gstAmount ?? bookingDetails?.taxAmount ?? 0);
+    const discountAmount = Number(bookingDetails?.discountAmount ?? 0);
+    const balanceDue = Math.max(0, Number(bookingDetails?.remainingAmount ?? bookingTotal - paidAmount));
+    const route = String(bookingDetails?.route || "");
+    const routeParts = route.split(/\s*(?:→|->)\s*/, 2);
+    const from = String(bookingDetails?.pickupLocation ?? routeParts[0] ?? "").replace(/^(pickup|from)\s*:\s*/i, "");
+    const to = String(bookingDetails?.dropLocation ?? routeParts[1] ?? "").replace(/^(drop|to)\s*:\s*/i, "");
+    const fareBeforeTax = Math.max(0, bookingTotal - taxAmount + discountAmount);
 
     // -- Brand Colors --
     const primaryColor = [8, 145, 178]; // Cyan-600
@@ -210,12 +205,10 @@ const Pay = ({ amount, name, email, phone, bookingDetails }) => {
 
     const invoiceDate = new Date().toLocaleDateString();
 
-    doc.text(`Date: ${invoiceDate}`, 14, 50);
+    doc.text(`Invoice Date: ${invoiceDate}`, 14, 50);
     doc.text(`Payment ID: ${response.razorpay_payment_id}`, 14, 55);
-    if (bookingDetails?.totalAmount && Number(bookingDetails.totalAmount) !== paidAmount) {
-      doc.text(`Booking Total: ₹${Number(bookingDetails.totalAmount).toFixed(2)}`, 14, 60);
-      doc.text(`Balance Due: ₹${Number(bookingDetails.remainingAmount || 0).toFixed(2)}`, 14, 65);
-    }
+    doc.text(`Booking Date: ${bookingDetails?.date || "Not provided"}`, 14, 60);
+    doc.text(`Booking Time: ${bookingDetails?.time || "Not provided"}`, 14, 65);
 
     // -- Customer Info --
     doc.setFontSize(12);
@@ -235,30 +228,33 @@ const Pay = ({ amount, name, email, phone, bookingDetails }) => {
       doc.text("Trip Details:", 110, 70);
       doc.setFont("helvetica", "normal");
       doc.setFontSize(10);
-      doc.text(`Route: ${bookingDetails.route}`, 110, 76);
-      doc.text(`Vehicle: ${bookingDetails.vehicle}`, 110, 81);
-      doc.text(`Date: ${bookingDetails.date} at ${bookingDetails.time}`, 110, 86);
-      doc.text(`Duration: ${duration} ${isHotelBooking ? "Night(s)" : "Days"}`, 110, 91);
-      if (bookingDetails.totalAmount && Number(bookingDetails.totalAmount) !== paidAmount) {
-        const paymentLabel = bookingDetails.isAdvance ? "Advance Paid" : "Amount Paid";
-        doc.text(`${paymentLabel}: ₹${paidAmount.toFixed(2)}`, 110, 96);
-        doc.text(`Balance Due: ₹${Number(bookingDetails.remainingAmount || 0).toFixed(2)}`, 110, 101);
+      if (to) {
+        doc.text(`From: ${from}`, 110, 76);
+        doc.text(`To: ${to}`, 110, 81);
+      } else {
+        doc.text(`Location: ${from || route || "Not provided"}`, 110, 76);
       }
+      doc.text(`Vehicle: ${bookingDetails.vehicle || "Not provided"}`, 110, to ? 86 : 81);
+      doc.text(`Trip: ${bookingDetails.tripType || (isHotelBooking ? "Hotel stay" : "Car booking")}`, 110, to ? 91 : 86);
+      doc.text(`Duration: ${duration} ${isHotelBooking ? "Night(s)" : "Hour(s)"}`, 110, to ? 96 : 91);
     }
 
     // -- Table --
     doc.autoTable({
-      startY: 105,
-      head: [["Description", "Details", "Amount"]],
+      startY: 108,
+      head: [["Description", "Details", "Amount (INR)"]],
       body: [
         [
           isHotelBooking ? `Hotel Stay (${duration} night${duration > 1 ? "s" : ""})` : `Vehicle Rental (${bookingDetails?.duration || 1} hours)`,
-          isHotelBooking ? `Rate: ₹${(hotelBasePrice / duration).toFixed(2)}/night` : `Daily Rate: ₹${(paidAmount / Math.ceil((bookingDetails?.duration || 1) / 24)).toFixed(0)}/day`,
-          `₹${paidAmount.toFixed(0)}`
+          isHotelBooking ? `Rate: ₹${(hotelBasePrice / duration).toFixed(2)}/night` : `${bookingDetails?.kilometers ? `${bookingDetails.kilometers} km` : bookingDetails?.tripType || "Booking fare"}`,
+          `₹${fareBeforeTax.toFixed(2)}`
         ],
-        ["Taxes & Fees", "Included", "₹0.00"],
+        ["Discount", discountAmount ? "Applied" : "None", `-₹${discountAmount.toFixed(2)}`],
+        ["GST / Taxes", taxAmount ? "Included in booking total" : "Not charged", `₹${taxAmount.toFixed(2)}`],
+        [bookingDetails?.isAdvance ? "Advance Paid" : "Amount Paid", "Payment received", `₹${paidAmount.toFixed(2)}`],
+        ["Balance Due", "Remaining amount", `₹${balanceDue.toFixed(2)}`],
       ],
-      foot: [["", "Total", `₹${paidAmount.toFixed(0)}`]],
+      foot: [["", "Booking Total (incl. GST)", `₹${bookingTotal.toFixed(2)}`]],
       headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold' },
       footStyles: { fillColor: secondaryColor, textColor: 255, fontStyle: 'bold' },
       theme: 'grid',
@@ -279,7 +275,7 @@ const Pay = ({ amount, name, email, phone, bookingDetails }) => {
 
     const downloadLink = document.createElement("a");
     downloadLink.href = url;
-    downloadLink.download = `ConsistentCars_Receipt_${response.razorpay_payment_id}.pdf`;
+    downloadLink.download = `ConsistentCars_Invoice_${response.razorpay_payment_id}.pdf`;
     document.body.appendChild(downloadLink);
     downloadLink.click();
     downloadLink.remove();
@@ -296,13 +292,13 @@ const Pay = ({ amount, name, email, phone, bookingDetails }) => {
       </button>
       {receiptUrl && (
         <div className="rounded-lg border border-emerald-300/30 bg-emerald-950/30 p-3 text-center text-sm text-emerald-100">
-          <p className="mb-2">Payment complete. Your receipt is ready.</p>
+          <p className="mb-2">Payment successful. Your invoice is ready to download.</p>
           <a
             href={receiptUrl}
-            download="ConsistentCars_Receipt.pdf"
+            download="ConsistentCars_Invoice.pdf"
             className="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-white px-4 py-3 font-semibold text-emerald-900 sm:w-auto"
           >
-            Download receipt
+            Download invoice
           </a>
         </div>
       )}

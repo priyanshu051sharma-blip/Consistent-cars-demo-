@@ -336,7 +336,11 @@ export default function BaywatchResort() {
                 date: startDate,
                 time: '13:00',
                 duration: nights,
-                basePrice: total
+                basePrice: total,
+                totalAmount: grandTotal,
+                gstAmount: gst,
+                discountAmount: discount,
+                remainingAmount: 0,
               }}
             />
           </div>

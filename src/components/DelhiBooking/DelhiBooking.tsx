@@ -55,6 +55,7 @@ const DelhiBooking = ({ cityName = "Delhi" }: DelhiBookingProps) => {
     const [pricing, setPricing] = useState<Pricing[]>([]);
     const [selectedPricing, setSelectedPricing] = useState<Pricing | null>(null);
     const [totalCost, setTotalCost] = useState<number>(0);
+    const [taxAmount, setTaxAmount] = useState<number>(0);
     const [advanceBookingRequired, setAdvanceBookingRequired] = useState(false);
     const [advanceBookingAmount, setAdvanceBookingAmount] = useState(0);
     const [paymentReady, setPaymentReady] = useState(false);
@@ -178,6 +179,7 @@ const DelhiBooking = ({ cityName = "Delhi" }: DelhiBookingProps) => {
 
         setAdvanceBookingRequired(pricingBreakdown.advanceBookingRequired);
         setAdvanceBookingAmount(pricingBreakdown.advanceBookingAmount);
+        setTaxAmount(pricingBreakdown.taxAmount);
         return pricingBreakdown.totalCost;
     };
 
@@ -261,6 +263,7 @@ const DelhiBooking = ({ cityName = "Delhi" }: DelhiBookingProps) => {
         duration: distanceData ? parseDurationToMinutes(distanceData.duration, kilometers) : 60,
         tripType: bookingType === "local" ? "Local" : "Outstation",
         kilometers,
+        taxAmount,
         totalAmount: totalCost,
         remainingAmount: Math.max(0, totalCost - (advanceBookingRequired ? advanceBookingAmount : totalCost)),
     } : null;

@@ -783,6 +783,7 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
                                                     duration: hours,
                                                     tripType,
                                                     taxAmount: pricingBreakdown?.taxAmount || 0,
+                                                    discountAmount: pricingBreakdown?.discountAmount || 0,
                                                     isAdvance: advanceBookingRequired,
                                                     totalAmount: grandTotal,
                                                     remainingAmount: Math.max(0, grandTotal - paymentAmount),
