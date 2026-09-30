@@ -471,7 +471,7 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
                                             className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-cyan-500 outline-none"
                                         />
                                         {showPickupSuggestions && pickupSuggestions.length > 0 && (
-                                            <div className="absolute z-20 top-full mt-2 w-full rounded-2xl bg-slate-950/95 border border-white/10 shadow-2xl overflow-hidden">
+                                            <div className="absolute z-[999] top-full mt-2 w-full rounded-2xl bg-slate-950/95 border border-white/10 shadow-2xl overflow-hidden">
                                                 {pickupSuggestions.map((suggestion) => (
                                                     <button
                                                         key={suggestion.id}
@@ -507,7 +507,7 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
                                             className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-cyan-500 outline-none"
                                         />
                                         {showDropSuggestions && dropSuggestions.length > 0 && (
-                                            <div className="absolute z-20 top-full mt-2 w-full rounded-2xl bg-slate-950/95 border border-white/10 shadow-2xl overflow-hidden">
+                                            <div className="absolute z-[999] top-full mt-2 w-full rounded-2xl bg-slate-950/95 border border-white/10 shadow-2xl overflow-hidden">
                                                 {dropSuggestions.map((suggestion) => (
                                                     <button
                                                         key={suggestion.id}
@@ -659,7 +659,7 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
                                                 className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-cyan-500 outline-none" 
                                             />
                                             {showPickupSuggestions && pickupSuggestions.length > 0 && (
-                                                <div className="absolute z-20 top-full left-0 right-0 mt-2 rounded-2xl bg-slate-950/95 border border-white/10 shadow-2xl overflow-hidden">
+                                                <div className="absolute z-[999] top-full left-0 right-0 mt-2 rounded-2xl bg-slate-950/95 border border-white/10 shadow-2xl overflow-hidden">
                                                     {pickupSuggestions.map((suggestion) => (
                                                         <button
                                                             key={suggestion.id}
@@ -688,7 +688,7 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
                                                 className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-cyan-500 outline-none" 
                                             />
                                             {showDropSuggestions && dropSuggestions.length > 0 && (
-                                                <div className="absolute z-20 top-full left-0 right-0 mt-2 rounded-2xl bg-slate-950/95 border border-white/10 shadow-2xl overflow-hidden">
+                                                <div className="absolute z-[999] top-full left-0 right-0 mt-2 rounded-2xl bg-slate-950/95 border border-white/10 shadow-2xl overflow-hidden">
                                                     {dropSuggestions.map((suggestion) => (
                                                         <button
                                                             key={suggestion.id}

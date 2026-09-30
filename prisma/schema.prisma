@@ -62,14 +62,35 @@ model Pricing {
   updatedAt       DateTime @updatedAt
 }
 
+model User {
+  id           String    @id @default(uuid())
+  name         String
+  email        String    @unique
+  phone        String?
+  passwordHash String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  bookings     Booking[]
+}
+
 model Booking {
-  id           String   @id @default(uuid())
-  customerName String
-  email        String
-  phone        String
-  type         String   // "Hotel" or "Transport"
-  details      String   // JSON string for flexibility (Vehicle name, route, dates, etc.)
-  amount       Float
-  status       String   @default("Paid") // Since we create it after payment
-  createdAt    DateTime @default(now())
+  id               String    @id @default(uuid())
+  customerId       String?
+  customer         User?     @relation(fields: [customerId], references: [id])
+  customerName     String
+  email            String
+  phone            String
+  type             String
+  details          String
+  amount           Float
+  depositAmount    Float     @default(0)
+  totalPaid        Float     @default(0)
+  remainingAmount  Float     @default(0)
+  status           String    @default("PENDING")
+  paymentStatus    String    @default("UNPAID")
+  bookingReference String    @unique @default(uuid())
+  invoiceNumber    String?   @unique
+  invoiceIssuedAt  DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 }

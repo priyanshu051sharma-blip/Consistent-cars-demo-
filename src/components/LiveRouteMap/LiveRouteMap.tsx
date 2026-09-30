@@ -183,8 +183,8 @@ export default function LiveRouteMap({ origin, destination, city, routeCoordinat
   }, [mapsReady, origin, destination]);
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-cyan-500/30 bg-slate-900/70">
-      <div ref={mapElement} className="h-64 w-full md:h-72" aria-label="Live route map" />
+    <div className="relative z-0 overflow-hidden rounded-2xl border border-cyan-500/30 bg-slate-900/70">
+      <div ref={mapElement} className="relative z-0 h-64 w-full md:h-72" aria-label="Live route map" />
       {!hasValidMapsKey && !routeCoordinates?.length && (
         <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-slate-950/75 px-3 py-2 text-xs text-white">
           Enter pickup and drop locations to draw the route. Blue marker shows your current location when permission is granted.

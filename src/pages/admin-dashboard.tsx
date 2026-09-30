@@ -44,7 +44,10 @@ export default function AdminDashboard() {
         fetch('/api/hotels')
       ]);
 
-      if (bookingsRes.ok) setBookings(await bookingsRes.json());
+      if (bookingsRes.ok) {
+        const payload = await bookingsRes.json();
+        setBookings(Array.isArray(payload) ? payload : (payload.bookings || []));
+      }
       if (carsRes.ok) setCars(await carsRes.json());
       if (hotelsRes.ok) setHotels(await hotelsRes.json());
     } catch (e) {
@@ -360,9 +363,11 @@ export default function AdminDashboard() {
                   className="bg-slate-900 border border-white/10 rounded-lg pl-10 pr-8 py-2 text-sm text-white focus:border-cyan-500 outline-none appearance-none cursor-pointer"
                 >
                   <option value="All">All Status</option>
-                  <option value="Paid">Paid</option>
-                  <option value="Completed">Completed</option>
-                  <option value="Cancelled">Cancelled</option>
+                  <option value="PENDING">Pending</option>
+                  <option value="CONFIRMED">Confirmed</option>
+                  <option value="COMPLETED">Completed</option>
+                  <option value="CANCELLED">Cancelled</option>
+                  <option value="REJECTED">Rejected</option>
                 </select>
               </div>
             </div>
@@ -404,17 +409,19 @@ export default function AdminDashboard() {
                         <td className="p-4 text-sm text-slate-400">{new Date(booking.createdAt).toLocaleDateString()}</td>
                         <td className="p-4">
                           <select
-                            value={booking.status}
+                            value={booking.status || 'PENDING'}
                             onChange={(e) => updateStatus(booking.id, e.target.value)}
                             className={`px-2 py-1 rounded-md text-xs font-semibold border-none outline-none cursor-pointer
-                                                ${booking.status === 'Paid' ? 'bg-green-500/20 text-green-400' :
-                                booking.status === 'Completed' ? 'bg-blue-500/20 text-blue-400' :
-                                  booking.status === 'Cancelled' ? 'bg-red-500/20 text-red-400' : 'bg-slate-700 text-white'}
+                                                ${booking.status === 'CONFIRMED' ? 'bg-green-500/20 text-green-400' :
+                                booking.status === 'COMPLETED' ? 'bg-blue-500/20 text-blue-400' :
+                                  booking.status === 'CANCELLED' || booking.status === 'REJECTED' ? 'bg-red-500/20 text-red-400' : 'bg-slate-700 text-white'}
                                             `}
                           >
-                            <option value="Paid">Paid</option>
-                            <option value="Completed">Completed</option>
-                            <option value="Cancelled">Cancelled</option>
+                            <option value="PENDING">Pending</option>
+                            <option value="CONFIRMED">Confirmed</option>
+                            <option value="COMPLETED">Completed</option>
+                            <option value="CANCELLED">Cancelled</option>
+                            <option value="REJECTED">Rejected</option>
                           </select>
                         </td>
                         <td className="p-4">

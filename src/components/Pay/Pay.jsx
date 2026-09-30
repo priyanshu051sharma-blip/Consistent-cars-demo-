@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import jsPDF from "jspdf";
-import "jspdf-autotable";
+import autoTable from "jspdf-autotable";
 
 const Pay = ({ amount, name, email, phone, bookingDetails }) => {
   const [receiptUrl, setReceiptUrl] = useState("");
@@ -240,7 +240,7 @@ const Pay = ({ amount, name, email, phone, bookingDetails }) => {
     }
 
     // -- Table --
-    doc.autoTable({
+    autoTable(doc, {
       startY: 108,
       head: [["Description", "Details", "Amount (INR)"]],
       body: [
