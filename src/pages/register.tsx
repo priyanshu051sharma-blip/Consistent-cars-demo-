@@ -36,7 +36,17 @@ export default function RegisterPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       });
-      const result = await response.json();
+
+      const rawText = await response.text();
+      let result: any = {};
+
+      if (rawText) {
+        try {
+          result = JSON.parse(rawText);
+        } catch {
+          throw new Error(rawText.replace(/\s+/g, ' ').trim().slice(0, 180) || 'Unable to create your account.');
+        }
+      }
 
       if (!response.ok || !result.success) {
         throw new Error(result.error || 'Unable to create your account.');

@@ -9,49 +9,57 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ success: false, error: 'Method not allowed' });
   }
 
-  const { name, email, phone, password, confirmPassword } = req.body || {};
+  try {
+    const { name, email, phone, password, confirmPassword } = req.body || {};
 
-  if (!name || !email || !phone || !password || !confirmPassword) {
-    return res.status(400).json({ success: false, error: 'Please complete all required fields.' });
+    if (!name || !email || !phone || !password || !confirmPassword) {
+      return res.status(400).json({ success: false, error: 'Please complete all required fields.' });
+    }
+
+    if (password !== confirmPassword) {
+      return res.status(400).json({ success: false, error: 'Passwords do not match.' });
+    }
+
+    if (String(password).length < 8) {
+      return res.status(400).json({ success: false, error: 'Password must be at least 8 characters.' });
+    }
+
+    const normalizedEmail = String(email).trim().toLowerCase();
+    const normalizedPhone = String(phone).trim();
+
+    const existingUser = await prisma.user.findUnique({ where: { email: normalizedEmail } }).catch(() => null);
+    if (existingUser) {
+      return res.status(409).json({ success: false, error: 'An account with this email already exists.' });
+    }
+
+    const user = await prisma.user.create({
+      data: {
+        name: String(name).trim(),
+        email: normalizedEmail,
+        phone: normalizedPhone,
+        passwordHash: hashPassword(String(password)),
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+      },
+    });
+
+    const sessionValue = signSessionPayload({ id: user.id, name: user.name, email: user.email, phone: user.phone });
+    res.setHeader('Set-Cookie', `cc_customer_session=${encodeURIComponent(sessionValue)}; Path=/; Max-Age=2592000; SameSite=Lax`);
+
+    return res.status(201).json({
+      success: true,
+      message: 'Account created successfully.',
+      user,
+    });
+  } catch (error) {
+    console.error('Customer registration failed:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Unable to create your account right now. Please check your database connection and try again.',
+    });
   }
-
-  if (password !== confirmPassword) {
-    return res.status(400).json({ success: false, error: 'Passwords do not match.' });
-  }
-
-  if (password.length < 8) {
-    return res.status(400).json({ success: false, error: 'Password must be at least 8 characters.' });
-  }
-
-  const normalizedEmail = String(email).trim().toLowerCase();
-  const normalizedPhone = String(phone).trim();
-
-  const existingUser = await prisma.user.findUnique({ where: { email: normalizedEmail } }).catch(() => null);
-  if (existingUser) {
-    return res.status(409).json({ success: false, error: 'An account with this email already exists.' });
-  }
-
-  const user = await prisma.user.create({
-    data: {
-      name: String(name).trim(),
-      email: normalizedEmail,
-      phone: normalizedPhone,
-      passwordHash: hashPassword(String(password)),
-    },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      phone: true,
-    },
-  });
-
-  const sessionValue = signSessionPayload({ id: user.id, name: user.name, email: user.email, phone: user.phone });
-  res.setHeader('Set-Cookie', `cc_customer_session=${encodeURIComponent(sessionValue)}; Path=/; Max-Age=2592000; SameSite=Lax`);
-
-  return res.status(201).json({
-    success: true,
-    message: 'Account created successfully.',
-    user,
-  });
 }

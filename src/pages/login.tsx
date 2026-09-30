@@ -27,7 +27,17 @@ export default function LoginPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
-      const result = await response.json();
+
+      const rawText = await response.text();
+      let result: any = {};
+
+      if (rawText) {
+        try {
+          result = JSON.parse(rawText);
+        } catch {
+          throw new Error(rawText.replace(/\s+/g, ' ').trim().slice(0, 180) || 'Unable to log in.');
+        }
+      }
 
       if (!response.ok || !result.success) {
         throw new Error(result.error || 'Unable to log in.');
