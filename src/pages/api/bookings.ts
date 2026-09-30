@@ -7,6 +7,12 @@ import { getSessionCookieValue } from '../../lib/session';
 
 const VALID_BOOKING_STATUSES = ['PENDING', 'CONFIRMED', 'REJECTED', 'CANCELLED', 'COMPLETED'];
 
+const getInvoiceNumber = () => {
+  const year = new Date().getFullYear();
+  const randomPart = Math.floor(Math.random() * 900000 + 100000);
+  return `INV-${year}-${randomPart}`;
+};
+
 const createEmailTransport = () => {
   if (!process.env.EMAIL_SERVER_HOST || !process.env.EMAIL_SERVER_USER || !process.env.EMAIL_SERVER_PASSWORD) {
     return null;
@@ -135,14 +141,20 @@ const sendCustomerBookingEmail = async (booking: any) => {
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'POST') {
-    const { name, email, phone, type, details, amount, paymentId, orderId, signature, customerId } = req.body || {};
+    const customerSession = getSessionCookieValue(req.headers.cookie) as any;
+    if (!customerSession?.id) {
+      return res.status(401).json({ success: false, error: 'Please log in or register before creating a booking.' });
+    }
 
-    if (!name || !email || !phone || !type || !details || !amount) {
+    const { name, email, phone, type, details, amount, totalAmount, paidAmount, paymentId, orderId, signature, customerId } = req.body || {};
+
+    if (!name || !email || !phone || !type || !details) {
       return res.status(400).json({ success: false, error: 'Missing booking data.' });
     }
 
-    const numericAmount = Number(amount);
-    if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+    const bookingTotal = Number(totalAmount ?? amount ?? 0);
+    const paidNow = Number(paidAmount ?? (paymentId ? amount : 0) ?? 0);
+    if (!Number.isFinite(bookingTotal) || bookingTotal <= 0) {
       return res.status(400).json({ success: false, error: 'Invalid booking amount.' });
     }
 
@@ -173,7 +185,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     try {
-      const resolvedCustomerId = customerId || (getSessionCookieValue(req.headers.cookie) as any)?.id || null;
+      const resolvedCustomerId = customerId || customerSession?.id || null;
       const bookingData = {
         customerId: resolvedCustomerId || undefined,
         customerName: String(name).trim(),
@@ -181,13 +193,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         phone: String(phone).trim(),
         type: String(type).trim(),
         details: typeof details === 'string' ? details : JSON.stringify(details),
-        amount: numericAmount,
-        depositAmount: paymentId ? numericAmount : 0,
-        totalPaid: paymentId ? numericAmount : 0,
-        remainingAmount: paymentId ? 0 : numericAmount,
-        status: 'PENDING',
-        paymentStatus: paymentId ? 'PAID' : 'UNPAID',
+        amount: bookingTotal,
+        depositAmount: paidNow,
+        totalPaid: paidNow,
+        remainingAmount: Math.max(0, bookingTotal - paidNow),
+        status: paymentId ? 'CONFIRMED' : 'PENDING',
+        paymentStatus: paymentId ? (paidNow >= bookingTotal ? 'PAID' : 'PARTIAL') : 'UNPAID',
         bookingReference: generateBookingReference(),
+        invoiceNumber: getInvoiceNumber(),
+        invoiceIssuedAt: new Date(),
       };
 
       const booking = await prisma.booking.create({ data: bookingData });
@@ -204,7 +218,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         console.error('Customer booking notification failed:', customerError);
       }
 
-      return res.status(201).json({ success: true, booking });
+      return res.status(201).json({ success: true, booking: { ...booking, invoiceNumber: booking.invoiceNumber, paymentStatus: booking.paymentStatus } });
     } catch (error) {
       console.error('Booking save failed:', error);
       return res.status(500).json({ success: false, error: 'Unable to create your booking. Please try again.' });

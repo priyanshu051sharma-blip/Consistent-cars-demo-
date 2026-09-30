@@ -10,6 +10,7 @@ import AIChatBot from "../components/AIChabot/AIChatbot";
 import Pay from "../components/Pay/Pay";
 import LiveRouteMap from "../components/LiveRouteMap/LiveRouteMap";
 import { useRouter } from "next/router";
+import { getCustomerSession } from "../utils/customer-auth";
 import { calculateDynamicPricing, getLocationExamples } from "../utils/pricing";
 
 const getDemandMultiplier = (tripDate: string, tripTime: string) => {
@@ -316,19 +317,25 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
             platformFee: 0,
             taxRate: 0,
             discounts: 0,
-            advanceBookingThreshold: Number.MAX_SAFE_INTEGER,
-            advanceBookingPercent: 0,
+            advanceBookingThreshold: 20,
+            advanceBookingPercent: 0.25,
             tripMultiplier: 1,
             minAdvanceAmount: 300,
         })
         : null;
 
     const grandTotal = pricingBreakdown ? pricingBreakdown.totalCost : 0;
-    const advanceBookingRequired = pricingBreakdown?.advanceBookingRequired || false;
-    const advanceBookingAmount = pricingBreakdown?.advanceBookingAmount || 0;
-    const paymentAmount = advanceBookingRequired ? advanceBookingAmount : grandTotal;
+    const advanceBookingRequired = (kilometers > 20) || Boolean(pricingBreakdown?.advanceBookingRequired);
+    const advanceBookingAmount = Math.round(Math.max(300, grandTotal * 0.25));
+    const paymentAmount = advanceBookingRequired ? advanceBookingAmount : 0;
     const isFormValid = Boolean(contactDetails.name && contactDetails.email && contactDetails.phone && date && time && pickupLocation && dropLocation);
-    const canPay = Boolean(pricingBreakdown && paymentAmount > 0 && distanceData && isFormValid);
+    const canPay = Boolean(pricingBreakdown && distanceData && isFormValid);
+
+    useEffect(() => {
+        if (!getCustomerSession()) {
+            router.replace('/login?returnTo=/booking');
+        }
+    }, [router]);
 
     const generatePDF = () => {
         if (!selectedCar || !selectedLocation || !isFormValid) return;
@@ -775,6 +782,7 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
                                                 name={contactDetails.name}
                                                 email={contactDetails.email}
                                                 phone={contactDetails.phone}
+                                                requiresAdvance={advanceBookingRequired}
                                                 bookingDetails={{
                                                     vehicle: selectedCar?.name || "Premium Car",
                                                     route: pickupLocation && dropLocation ? `${pickupLocation} → ${dropLocation}` : selectedLocation?.name || "Trip",
@@ -785,8 +793,13 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
                                                     taxAmount: pricingBreakdown?.taxAmount || 0,
                                                     discountAmount: pricingBreakdown?.discountAmount || 0,
                                                     isAdvance: advanceBookingRequired,
+                                                    requiresAdvance: advanceBookingRequired,
                                                     totalAmount: grandTotal,
+                                                    paidAmount: paymentAmount,
                                                     remainingAmount: Math.max(0, grandTotal - paymentAmount),
+                                                    pickupLocation,
+                                                    dropLocation,
+                                                    kilometers,
                                                 }}
                                             />
                                         ) : (
@@ -795,7 +808,7 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
                                                 disabled
                                                 className="w-full rounded-xl bg-slate-700 px-6 py-4 text-white font-semibold opacity-50"
                                             >
-                                                {pricingBreakdown ? `Confirm & Pay ₹${paymentAmount.toLocaleString()}` : 'Confirm & Pay ₹0'}
+                                                {pricingBreakdown ? (advanceBookingRequired ? `Advance amount ₹${advanceBookingAmount.toLocaleString()}` : 'Confirm Booking') : 'Confirm Booking'}
                                             </button>
                                         )}
 

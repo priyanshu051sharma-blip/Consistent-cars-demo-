@@ -1,11 +1,14 @@
 "use client";
 import React, { useEffect, useState } from "react";
+import { useRouter } from "next/router";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { getCustomerSession } from "../../utils/customer-auth";
 
-const Pay = ({ amount, name, email, phone, bookingDetails }) => {
+const Pay = ({ amount, name, email, phone, bookingDetails, requiresAdvance = false }) => {
+  const router = useRouter();
   const [receiptUrl, setReceiptUrl] = useState("");
-  const numericAmount = Number(amount);
+  const numericAmount = Number(amount || 0);
   const isTestMode = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID?.startsWith("rzp_test_");
 
   useEffect(() => {
@@ -26,9 +29,50 @@ const Pay = ({ amount, name, email, phone, bookingDetails }) => {
       return;
     }
 
+    const customerSession = getCustomerSession();
+    if (!customerSession) {
+      router.push('/login?returnTo=/booking');
+      return;
+    }
+
     if (!name || !email || !phone) {
       alert("Please fill in all contact details first.");
       return;
+    }
+
+    if (!requiresAdvance && Number(bookingDetails?.totalAmount ?? 0) > 0) {
+      try {
+        const bookingResponse = await fetch('/api/bookings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name,
+            email,
+            phone,
+            type: bookingDetails?.vehicle === "Hotel Stay" ? "Hotel" : "Transport",
+            details: bookingDetails,
+            amount: Number(bookingDetails?.totalAmount ?? 0),
+            totalAmount: Number(bookingDetails?.totalAmount ?? 0),
+            paidAmount: 0,
+            customerId: customerSession.id,
+          })
+        });
+
+        const bookingResult = await bookingResponse.json().catch(() => ({}));
+        if (!bookingResponse.ok) {
+          throw new Error(bookingResult?.error || 'Booking creation failed');
+        }
+
+        const invoiceNumber = bookingResult?.booking?.invoiceNumber || 'INV-NOT-ISSUED';
+        generatePDF({ razorpay_payment_id: invoiceNumber }, 0, true);
+        alert('Booking created successfully. No advance payment is required for trips under 20 km. Please pay after the ride.');
+        router.push('/my-bookings');
+        return;
+      } catch (error) {
+        alert(`Booking failed: ${error.message}`);
+        console.error('No-payment booking failed:', error);
+        return;
+      }
     }
 
     if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
@@ -112,10 +156,13 @@ const Pay = ({ amount, name, email, phone, bookingDetails }) => {
                 phone,
                 type: bookingDetails?.vehicle === "Hotel Stay" ? "Hotel" : "Transport",
                 details: bookingDetails,
-                amount: numericAmount,
+                amount: Number(bookingDetails?.totalAmount ?? numericAmount),
+                totalAmount: Number(bookingDetails?.totalAmount ?? numericAmount),
+                paidAmount: numericAmount,
                 paymentId: response.razorpay_payment_id,
                 orderId: response.razorpay_order_id,
-                signature: response.razorpay_signature
+                signature: response.razorpay_signature,
+                customerId: customerSession?.id,
               })
             });
             const bookingResult = await bookingResponse.json().catch(() => ({}));
@@ -131,6 +178,7 @@ const Pay = ({ amount, name, email, phone, bookingDetails }) => {
           alert(bookingSaveError
             ? `Payment received and receipt generated, but booking confirmation failed: ${bookingSaveError.message}`
             : "Payment successful! Your receipt is ready.");
+          router.push('/my-bookings');
         },
         prefill: {
           name: name,
@@ -167,7 +215,7 @@ const Pay = ({ amount, name, email, phone, bookingDetails }) => {
     }
   };
 
-  const generatePDF = (response, paidAmount) => {
+  const generatePDF = (response, paidAmount, isNoAdvanceBooking = false) => {
     const doc = new jsPDF();
     const isHotelBooking = bookingDetails?.vehicle === "Hotel Stay";
     const duration = Math.max(1, Number(bookingDetails?.duration) || 1);
@@ -176,6 +224,7 @@ const Pay = ({ amount, name, email, phone, bookingDetails }) => {
     const taxAmount = Number(bookingDetails?.gstAmount ?? bookingDetails?.taxAmount ?? 0);
     const discountAmount = Number(bookingDetails?.discountAmount ?? 0);
     const balanceDue = Math.max(0, Number(bookingDetails?.remainingAmount ?? bookingTotal - paidAmount));
+    const paymentLabel = isNoAdvanceBooking ? "Booking Confirmed" : (bookingDetails?.isAdvance ? "Advance Paid" : "Amount Paid");
     const route = String(bookingDetails?.route || "");
     const routeParts = route.split(/\s*(?:→|->)\s*/, 2);
     const from = String(bookingDetails?.pickupLocation ?? routeParts[0] ?? "").replace(/^(pickup|from)\s*:\s*/i, "");
@@ -251,7 +300,7 @@ const Pay = ({ amount, name, email, phone, bookingDetails }) => {
         ],
         ["Discount", discountAmount ? "Applied" : "None", `-₹${discountAmount.toFixed(2)}`],
         ["GST / Taxes", taxAmount ? "Included in booking total" : "Not charged", `₹${taxAmount.toFixed(2)}`],
-        [bookingDetails?.isAdvance ? "Advance Paid" : "Amount Paid", "Payment received", `₹${paidAmount.toFixed(2)}`],
+        [paymentLabel, isNoAdvanceBooking ? "No advance required" : "Payment received", `₹${paidAmount.toFixed(2)}`],
         ["Balance Due", "Remaining amount", `₹${balanceDue.toFixed(2)}`],
       ],
       foot: [["", "Booking Total (incl. GST)", `₹${bookingTotal.toFixed(2)}`]],
@@ -288,7 +337,7 @@ const Pay = ({ amount, name, email, phone, bookingDetails }) => {
         type="button"
         className="min-h-12 w-full min-w-0 whitespace-normal rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 px-4 py-3 text-center text-sm font-bold leading-tight text-white shadow-lg shadow-cyan-900/20 transition-all hover:from-cyan-500 hover:to-blue-500 hover:scale-[1.02] active:scale-[0.98] sm:text-base"
       >
-        Confirm &amp; Pay ₹{numericAmount.toLocaleString("en-IN")}
+        {requiresAdvance ? `Confirm & Pay ₹${numericAmount.toLocaleString("en-IN")}` : 'Confirm Booking (Pay after ride)'}
       </button>
       {receiptUrl && (
         <div className="rounded-lg border border-emerald-300/30 bg-emerald-950/30 p-3 text-center text-sm text-emerald-100">
