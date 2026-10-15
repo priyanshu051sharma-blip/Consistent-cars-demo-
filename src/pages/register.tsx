@@ -3,6 +3,10 @@ import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { isCustomerLoggedIn, setCustomerSession } from '../utils/customer-auth';
 
+export async function getServerSideProps() {
+  return { redirect: { destination: '/', permanent: false } };
+}
+
 export default function RegisterPage() {
   const router = useRouter();
   const [form, setForm] = useState({
@@ -67,15 +71,20 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0f172a] text-white flex items-center justify-center px-4 py-16">
-      <div className="w-full max-w-lg rounded-3xl border border-cyan-500/20 bg-slate-900/70 p-8 shadow-2xl shadow-cyan-900/10 backdrop-blur-md">
+    <div className="min-h-screen bg-[#071827] text-white flex items-center justify-center px-4 py-14 md:py-20">
+      <div className="w-full max-w-[1200px]">
         <div className="mb-8 text-center">
           <p className="text-sm uppercase tracking-[0.3em] text-cyan-400">New customer</p>
-          <h1 className="mt-3 text-3xl font-bold text-white">Create an account</h1>
+          <h1 className="mt-4 text-[clamp(3rem,6vw,7rem)] font-black leading-[0.92] tracking-[-0.06em] text-white">
+            Create an account
+          </h1>
         </div>
 
         {error && (
-          <div className="mb-5 rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+          <div
+            aria-live="polite"
+            className="mb-8 w-full rounded-[1.25rem] border border-red-300/60 bg-[#43202d]/80 px-6 py-5 text-[clamp(1.5rem,2vw,2.4rem)] leading-[1.3] tracking-[-0.02em] text-red-100 shadow-[0_0_0_1px_rgba(248,113,113,0.25)]"
+          >
             {error}
           </div>
         )}

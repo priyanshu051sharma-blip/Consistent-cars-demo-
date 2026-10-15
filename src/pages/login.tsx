@@ -3,6 +3,10 @@ import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { isCustomerLoggedIn, setCustomerSession } from '../utils/customer-auth';
 
+export async function getServerSideProps() {
+  return { redirect: { destination: '/', permanent: false } };
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');

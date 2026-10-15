@@ -29,8 +29,8 @@ Add these variables:
 
 ```
 DATABASE_URL = (use the POSTGRES_PRISMA_URL value from Storage tab)
-NEXT_PUBLIC_RAZORPAY_KEY_ID = rzp_test_SzzWGnDkh15hjC
-RAZORPAY_KEY_SECRET = ioGdHKX0uacc3nY67t0GnXqs
+NEXT_PUBLIC_RAZORPAY_KEY_ID = <set live key in Vercel>
+RAZORPAY_KEY_SECRET = <set securely in Vercel>
 NEXT_PUBLIC_APP_URL = https://consistent-cars-main.vercel.app
 ```
 

@@ -5,6 +5,10 @@ import { setAdminLoggedIn, isAdminLoggedIn } from "../utils/auth";
 import { motion } from "framer-motion";
 import { Lock, User } from "lucide-react";
 
+export async function getServerSideProps() {
+  return { redirect: { destination: '/', permanent: false } };
+}
+
 export default function AdminLogin() {
   const router = useRouter();
   const [username, setUsername] = useState("");

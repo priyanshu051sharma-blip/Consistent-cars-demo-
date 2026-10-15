@@ -10,7 +10,6 @@ import AIChatBot from "../components/AIChabot/AIChatbot";
 import Pay from "../components/Pay/Pay";
 import LiveRouteMap from "../components/LiveRouteMap/LiveRouteMap";
 import { useRouter } from "next/router";
-import { getCustomerSession } from "../utils/customer-auth";
 import { calculateDynamicPricing, getLocationExamples } from "../utils/pricing";
 
 const getDemandMultiplier = (tripDate: string, tripTime: string) => {
@@ -330,12 +329,6 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
     const paymentAmount = advanceBookingRequired ? advanceBookingAmount : 0;
     const isFormValid = Boolean(contactDetails.name && contactDetails.email && contactDetails.phone && date && time && pickupLocation && dropLocation);
     const canPay = Boolean(pricingBreakdown && distanceData && isFormValid);
-
-    useEffect(() => {
-        if (!getCustomerSession()) {
-            router.replace('/login?returnTo=/booking');
-        }
-    }, [router]);
 
     const generatePDF = () => {
         if (!selectedCar || !selectedLocation || !isFormValid) return;

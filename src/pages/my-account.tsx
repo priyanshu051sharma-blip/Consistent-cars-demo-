@@ -1,23 +1,23 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/router';
 import { isCustomerLoggedIn, getCustomerSession, clearCustomerSession } from '../utils/customer-auth';
 
+export async function getServerSideProps() {
+  return { redirect: { destination: '/', permanent: false } };
+}
+
 export default function MyAccountPage() {
-  const router = useRouter();
   const [session, setSession] = useState(getCustomerSession());
 
   useEffect(() => {
     if (!isCustomerLoggedIn()) {
-      router.replace('/login');
       return;
     }
     setSession(getCustomerSession());
-  }, [router]);
+  }, []);
 
   const handleLogout = () => {
     clearCustomerSession();
-    router.push('/');
   };
 
   if (!session) return null;

@@ -1,23 +1,13 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { useRouter } from "next/router";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { getCustomerSession } from "../../utils/customer-auth";
 
 const Pay = ({ amount, name, email, phone, bookingDetails, requiresAdvance = false }) => {
-  const router = useRouter();
   const [receiptUrl, setReceiptUrl] = useState("");
+  const [receiptMessage, setReceiptMessage] = useState("");
   const numericAmount = Number(amount || 0);
   const isTestMode = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID?.startsWith("rzp_test_");
-
-  useEffect(() => {
-    // Load Razorpay script
-    const script = document.createElement("script");
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    script.async = true;
-    document.body.appendChild(script);
-  }, []);
 
   useEffect(() => () => {
     if (receiptUrl) URL.revokeObjectURL(receiptUrl);
@@ -26,12 +16,6 @@ const Pay = ({ amount, name, email, phone, bookingDetails, requiresAdvance = fal
   const handlePayment = async () => {
     if (typeof window === "undefined") {
       alert("Please use a modern browser to process payments.");
-      return;
-    }
-
-    const customerSession = getCustomerSession();
-    if (!customerSession) {
-      router.push('/login?returnTo=/booking');
       return;
     }
 
@@ -54,7 +38,6 @@ const Pay = ({ amount, name, email, phone, bookingDetails, requiresAdvance = fal
             amount: Number(bookingDetails?.totalAmount ?? 0),
             totalAmount: Number(bookingDetails?.totalAmount ?? 0),
             paidAmount: 0,
-            customerId: customerSession.id,
           })
         });
 
@@ -66,7 +49,6 @@ const Pay = ({ amount, name, email, phone, bookingDetails, requiresAdvance = fal
         const invoiceNumber = bookingResult?.booking?.invoiceNumber || 'INV-NOT-ISSUED';
         generatePDF({ razorpay_payment_id: invoiceNumber }, 0, true);
         alert('Booking created successfully. No advance payment is required for trips under 20 km. Please pay after the ride.');
-        router.push('/my-bookings');
         return;
       } catch (error) {
         alert(`Booking failed: ${error.message}`);
@@ -83,14 +65,13 @@ const Pay = ({ amount, name, email, phone, bookingDetails, requiresAdvance = fal
     try {
       // Load Razorpay script if not already loaded
       if (!window.Razorpay) {
-        const script = document.createElement("script");
-        script.src = "https://checkout.razorpay.com/v1/checkout.js";
-        script.async = true;
-        document.head.appendChild(script);
-        
-        // Wait for script to load
-        await new Promise((resolve) => {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement("script");
+          script.src = "https://checkout.razorpay.com/v1/checkout.js";
+          script.async = true;
           script.onload = resolve;
+          script.onerror = () => reject(new Error("Unable to load Razorpay checkout."));
+          document.head.appendChild(script);
         });
       }
 
@@ -162,7 +143,6 @@ const Pay = ({ amount, name, email, phone, bookingDetails, requiresAdvance = fal
                 paymentId: response.razorpay_payment_id,
                 orderId: response.razorpay_order_id,
                 signature: response.razorpay_signature,
-                customerId: customerSession?.id,
               })
             });
             const bookingResult = await bookingResponse.json().catch(() => ({}));
@@ -178,7 +158,6 @@ const Pay = ({ amount, name, email, phone, bookingDetails, requiresAdvance = fal
           alert(bookingSaveError
             ? `Payment received and receipt generated, but booking confirmation failed: ${bookingSaveError.message}`
             : "Payment successful! Your receipt is ready.");
-          router.push('/my-bookings');
         },
         prefill: {
           name: name,
@@ -255,7 +234,7 @@ const Pay = ({ amount, name, email, phone, bookingDetails, requiresAdvance = fal
     const invoiceDate = new Date().toLocaleDateString();
 
     doc.text(`Invoice Date: ${invoiceDate}`, 14, 50);
-    doc.text(`Payment ID: ${response.razorpay_payment_id}`, 14, 55);
+    doc.text(`${isNoAdvanceBooking ? "Invoice Number" : "Payment ID"}: ${response.razorpay_payment_id}`, 14, 55);
     doc.text(`Booking Date: ${bookingDetails?.date || "Not provided"}`, 14, 60);
     doc.text(`Booking Time: ${bookingDetails?.time || "Not provided"}`, 14, 65);
 
@@ -321,6 +300,9 @@ const Pay = ({ amount, name, email, phone, bookingDetails, requiresAdvance = fal
     const receiptBlob = doc.output("blob");
     const url = URL.createObjectURL(receiptBlob);
     setReceiptUrl(url);
+    setReceiptMessage(isNoAdvanceBooking
+      ? "Booking confirmed. Your invoice is ready to download."
+      : "Payment successful. Your invoice is ready to download.");
 
     const downloadLink = document.createElement("a");
     downloadLink.href = url;
@@ -341,7 +323,7 @@ const Pay = ({ amount, name, email, phone, bookingDetails, requiresAdvance = fal
       </button>
       {receiptUrl && (
         <div className="rounded-lg border border-emerald-300/30 bg-emerald-950/30 p-3 text-center text-sm text-emerald-100">
-          <p className="mb-2">Payment successful. Your invoice is ready to download.</p>
+          <p className="mb-2">{receiptMessage}</p>
           <a
             href={receiptUrl}
             download="ConsistentCars_Invoice.pdf"

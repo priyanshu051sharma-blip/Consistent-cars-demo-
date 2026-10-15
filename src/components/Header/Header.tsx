@@ -3,24 +3,19 @@ import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { useRouter } from "next/router";
 import { isAdminLoggedIn, clearAdminAuth } from "@/utils/auth";
-import { getCustomerSession, clearCustomerSession } from "@/utils/customer-auth";
 
 const Header: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [customerSession, setCustomerSessionState] = useState<any>(null);
   const router = useRouter();
 
   useEffect(() => {
     setIsAdmin(isAdminLoggedIn());
-    setCustomerSessionState(getCustomerSession());
   }, [router.pathname]);
 
   function handleLogout() {
     clearAdminAuth();
-    clearCustomerSession();
     setIsAdmin(false);
-    setCustomerSessionState(null);
     router.push("/");
   }
 
@@ -95,24 +90,7 @@ const Header: React.FC = () => {
         </nav>
 
         <div className="hidden md:flex items-center flex-shrink-0 gap-3">
-          {!customerSession ? (
-            <>
-              <Link href="/login" className="px-4 py-2 rounded-full font-semibold text-white hover:text-cyan-300">Login</Link>
-              <Link href="/register" className="px-4 py-2 rounded-full font-semibold bg-cyan-500 text-slate-950 hover:bg-cyan-400">Register</Link>
-            </>
-          ) : (
-            <>
-              <Link href="/my-account" className="px-4 py-2 rounded-full font-semibold text-white hover:text-cyan-300">My Account</Link>
-              <Link href="/my-bookings" className="px-4 py-2 rounded-full font-semibold text-white hover:text-cyan-300">My Bookings</Link>
-              <button onClick={handleLogout} className="px-4 py-2 rounded-full font-semibold bg-red-500/10 text-red-300 border border-red-500/30 hover:bg-red-500 hover:text-white">Logout</button>
-            </>
-          )}
-
-          {!isAdmin ? (
-            <Link href="/admin-login" className="ml-2 flex items-center bg-gradient-to-r from-[#00ffff] to-[#00bfff] text-gray-900 px-4 py-2 rounded-full font-bold shadow-lg hover:from-[#00bfff] hover:to-[#00ffff] hover:text-gray-600 transition-all duration-200 border-2 border-[#00ffff]">
-              Admin Login
-            </Link>
-          ) : (
+          {isAdmin && (
             <>
               <Link href="/admin-dashboard" className="px-5 py-2 rounded-full font-bold bg-gradient-to-r from-cyan-500/10 to-blue-500/10 text-cyan-400 border border-cyan-500/50 hover:bg-cyan-500 hover:text-white hover:border-cyan-400 transition-all shadow-[0_0_15px_rgba(6,182,212,0.15)] hover:shadow-[0_0_20px_rgba(6,182,212,0.4)]">
                 Dashboard
@@ -150,22 +128,7 @@ const Header: React.FC = () => {
             >
               Contact
             </Link>
-            {!customerSession ? (
-              <>
-                <Link href="/login" className="text-gray-900 bg-cyan-400 px-4 py-2 rounded-full font-bold text-center">Login</Link>
-                <Link href="/register" className="text-gray-900 bg-white px-4 py-2 rounded-full font-bold text-center">Register</Link>
-              </>
-            ) : (
-              <>
-                <Link href="/my-account" className="text-gray-200 px-4 py-2 rounded-full font-bold text-center border border-[#00ffff]">My Account</Link>
-                <Link href="/my-bookings" className="text-gray-200 px-4 py-2 rounded-full font-bold text-center border border-[#00ffff]">My Bookings</Link>
-                <button onClick={handleLogout} className="text-white px-4 py-2 rounded-full bg-[#ff6b6b]">Logout</button>
-              </>
-            )}
-
-            {!isAdmin ? (
-              <Link href="/admin-login" className="text-gray-900 bg-gradient-to-r from-[#00ffff] to-[#00bfff] px-4 py-2 rounded-full font-bold text-center shadow-md border border-[#00ffff]">Admin Login</Link>
-            ) : (
+            {isAdmin && (
               <>
                 <Link href="/admin-dashboard" className="text-gray-200 px-4 py-2 rounded-full font-bold text-center border border-[#00ffff]">Dashboard</Link>
                 <button onClick={handleLogout} className="text-white px-4 py-2 rounded-full bg-[#ff6b6b]">Logout</button>

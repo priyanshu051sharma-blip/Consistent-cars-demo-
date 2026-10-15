@@ -142,11 +142,8 @@ const sendCustomerBookingEmail = async (booking: any) => {
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'POST') {
     const customerSession = getSessionCookieValue(req.headers.cookie) as any;
-    if (!customerSession?.id) {
-      return res.status(401).json({ success: false, error: 'Please log in or register before creating a booking.' });
-    }
 
-    const { name, email, phone, type, details, amount, totalAmount, paidAmount, paymentId, orderId, signature, customerId } = req.body || {};
+    const { name, email, phone, type, details, amount, totalAmount, paidAmount, paymentId, orderId, signature } = req.body || {};
 
     if (!name || !email || !phone || !type || !details) {
       return res.status(400).json({ success: false, error: 'Missing booking data.' });
@@ -185,9 +182,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     try {
-      const resolvedCustomerId = customerId || customerSession?.id || null;
+      const resolvedCustomerId = customerSession?.id || null;
       const bookingData = {
-        customerId: resolvedCustomerId || undefined,
+        customerId: resolvedCustomerId,
         customerName: String(name).trim(),
         email: String(email).trim().toLowerCase(),
         phone: String(phone).trim(),

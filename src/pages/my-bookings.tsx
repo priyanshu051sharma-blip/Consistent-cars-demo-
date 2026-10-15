@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/router';
 import { Download, MapPin, Calendar, Car, CircleDollarSign } from 'lucide-react';
-import { isCustomerLoggedIn, clearCustomerSession } from '../utils/customer-auth';
+
+export async function getServerSideProps() {
+  return { redirect: { destination: '/', permanent: false } };
+}
 
 interface BookingRecord {
   id: string;
@@ -20,19 +22,12 @@ interface BookingRecord {
 }
 
 export default function MyBookingsPage() {
-  const router = useRouter();
   const [bookings, setBookings] = useState<BookingRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchBookings = async () => {
     try {
       const response = await fetch('/api/bookings?customer=true');
-      if (response.status === 401) {
-        clearCustomerSession();
-        router.replace('/login');
-        return;
-      }
-
       const result = await response.json();
       setBookings(result.bookings || []);
     } catch (error) {
@@ -43,13 +38,8 @@ export default function MyBookingsPage() {
   };
 
   useEffect(() => {
-    if (!isCustomerLoggedIn()) {
-      router.replace('/login');
-      return;
-    }
-
     fetchBookings();
-  }, [router]);
+  }, []);
 
   const handleDownload = async (bookingId: string) => {
     const response = await fetch(`/api/bookings/${bookingId}/invoice`);
