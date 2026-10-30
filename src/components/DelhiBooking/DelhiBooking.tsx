@@ -51,6 +51,7 @@ interface DelhiBookingProps {
 const DelhiBooking = ({ cityName = "Delhi" }: DelhiBookingProps) => {
     const [bookingType, setBookingType] = useState<"local" | "outstation">("local");
     const [selectedCar, setSelectedCar] = useState<string>("");
+    const [numberOfCabs, setNumberOfCabs] = useState(1);
     const [kilometers, setKilometers] = useState<number>(80);
     const [pricing, setPricing] = useState<Pricing[]>([]);
     const [selectedPricing, setSelectedPricing] = useState<Pricing | null>(null);
@@ -175,6 +176,7 @@ const DelhiBooking = ({ cityName = "Delhi" }: DelhiBookingProps) => {
             advanceBookingThreshold: 25,
             advanceBookingPercent: 0,
             minAdvanceAmount: 300,
+            tripMultiplier: numberOfCabs,
         });
 
         setAdvanceBookingRequired(pricingBreakdown.advanceBookingRequired);
@@ -187,7 +189,7 @@ const DelhiBooking = ({ cityName = "Delhi" }: DelhiBookingProps) => {
         if (selectedPricing) {
             setTotalCost(calculateCost(selectedPricing, kilometers));
         }
-    }, [selectedPricing, kilometers, distanceData, contactDetails.date, contactDetails.time]);
+    }, [selectedPricing, kilometers, distanceData, contactDetails.date, contactDetails.time, numberOfCabs]);
 
     const handleLocationChange = (location: string) => {
         const locationName = bookingType === "local" ? "Delhi Local" : "Delhi Outstation";
@@ -265,6 +267,7 @@ const DelhiBooking = ({ cityName = "Delhi" }: DelhiBookingProps) => {
         kilometers,
         taxAmount,
         totalAmount: totalCost,
+        numberOfCabs,
         remainingAmount: Math.max(0, totalCost - (advanceBookingRequired ? advanceBookingAmount : totalCost)),
     } : null;
 
@@ -437,6 +440,26 @@ const DelhiBooking = ({ cityName = "Delhi" }: DelhiBookingProps) => {
                             )}
                         </div>
 
+                        <div className="bg-gray-800 p-6 rounded-xl border border-cyan-500/30">
+                            <label htmlFor="numberOfCabs" className="block text-xl font-bold text-cyan-400 mb-4">
+                                <Car className="inline mr-2" size={20} />
+                                Number of Cabs
+                            </label>
+                            <select
+                                id="numberOfCabs"
+                                value={numberOfCabs}
+                                onChange={(e) => setNumberOfCabs(Number(e.target.value))}
+                                className="w-full p-3 bg-gray-700 text-white rounded-lg border border-gray-600 focus:border-cyan-500"
+                            >
+                                {[1, 2, 3].map((count) => (
+                                    <option key={count} value={count}>
+                                        {count} {count === 1 ? "cab" : "cabs"}
+                                    </option>
+                                ))}
+                            </select>
+                            <p className="text-gray-400 text-sm mt-2">Fare is calculated per cab.</p>
+                        </div>
+
                         {/* Pickup Details */}
                         <div className="bg-gray-800 p-6 rounded-xl border border-cyan-500/30">
                             <h3 className="text-xl font-bold text-cyan-400 mb-4">
@@ -471,6 +494,10 @@ const DelhiBooking = ({ cityName = "Delhi" }: DelhiBookingProps) => {
                             <div className="bg-gradient-to-br from-cyan-600 to-blue-600 p-6 rounded-xl text-white">
                                 <h3 className="text-2xl font-bold mb-6">Pricing Breakdown</h3>
                                 <div className="space-y-3 mb-6">
+                                    <div className="flex justify-between text-sm">
+                                        <span>Number of cabs</span>
+                                        <span>{numberOfCabs}</span>
+                                    </div>
                                     {(() => {
                                         const breakdown = calculateDynamicPricing({
                                             basePrice: selectedPricing.basePrice,
@@ -485,6 +512,7 @@ const DelhiBooking = ({ cityName = "Delhi" }: DelhiBookingProps) => {
                                             platformFee: 15,
                                             taxRate: 0.12,
                                             discounts: 0,
+                                            tripMultiplier: numberOfCabs,
                                         });
                                         return (
                                             <>

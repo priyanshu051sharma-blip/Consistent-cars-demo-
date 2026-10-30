@@ -117,6 +117,7 @@ export default function MyBookingsPage() {
                     <div className="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
                       <div className="mb-2 flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-slate-400"><Car size={14} /> Vehicle</div>
                       <p className="text-base font-semibold text-white">{details.vehicle || booking.type}</p>
+                      <p className="mt-1 text-sm text-slate-300">{details.numberOfCabs || 1} {Number(details.numberOfCabs || 1) === 1 ? 'cab' : 'cabs'}</p>
                     </div>
                     <div className="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
                       <div className="mb-2 flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-slate-400"><MapPin size={14} /> Route</div>

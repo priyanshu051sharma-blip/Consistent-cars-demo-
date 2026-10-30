@@ -55,9 +55,10 @@ function buildInvoicePdf(booking: any) {
   doc.text(`Date: ${details.date || 'N/A'}`, 110, 117);
   doc.text(`Time: ${details.time || 'N/A'}`, 110, 124);
   doc.text(`Distance: ${details.distance || details.kilometers || 'N/A'} km`, 110, 131);
+  doc.text(`Number of Cabs: ${details.numberOfCabs || 1}`, 110, 138);
 
   autoTable(doc, {
-    startY: 145,
+    startY: 152,
     head: [['Description', 'Amount']],
     body: [
       ['Base Fare', `₹${safeNumber(details.baseFare || totalAmount, totalAmount).toFixed(2)}`],

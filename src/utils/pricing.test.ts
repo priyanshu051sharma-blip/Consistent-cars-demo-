@@ -45,3 +45,27 @@ test('calculateDynamicPricing charges only extras beyond the package', () => {
   assert.equal(breakdown.timeCharge, 150);
   assert.equal(breakdown.totalCost, 2270);
 });
+
+test('calculateDynamicPricing multiplies the fare for the requested cab count', () => {
+  const oneCab = calculateDynamicPricing({
+    basePrice: 1800,
+    kilometers: 80,
+    minutes: 480,
+    pricePerKm: 16,
+    baseKm: 80,
+    platformFee: 15,
+    taxRate: 0.12,
+  });
+  const threeCabs = calculateDynamicPricing({
+    basePrice: 1800,
+    kilometers: 80,
+    minutes: 480,
+    pricePerKm: 16,
+    baseKm: 80,
+    platformFee: 15,
+    taxRate: 0.12,
+    tripMultiplier: 3,
+  });
+
+  assert.equal(threeCabs.totalCost, oneCab.totalCost * 3);
+});

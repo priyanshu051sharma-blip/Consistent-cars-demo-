@@ -58,6 +58,7 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
     const [step, setStep] = useState<1 | 2>(1); // 1: Vehicle, 2: Form/Pay (Skipping "Location" step as it's pre-selected)
     const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
     const [selectedCar, setSelectedCar] = useState<Car | null>(null);
+    const [numberOfCabs, setNumberOfCabs] = useState(1);
     const [hours, setHours] = useState<number>(1);
     const [date, setDate] = useState("");
     const [time, setTime] = useState("");
@@ -318,7 +319,7 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
             discounts: 0,
             advanceBookingThreshold: 20,
             advanceBookingPercent: 0.25,
-            tripMultiplier: 1,
+            tripMultiplier: numberOfCabs,
             minAdvanceAmount: 300,
         })
         : null;
@@ -357,6 +358,7 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
                 ["Email", contactDetails.email],
                 ["Trip Route", `${selectedLocation.name} Trip`],
                 ["Vehicle", selectedCar.name],
+                ["Number of Cabs", String(numberOfCabs)],
                 ["Trip Type", tripType === 'round-trip' ? 'Round-trip' : 'One-way'],
                 ["Date & Time", `${date} at ${time}`],
                 ["Duration", `${hours} Hours`],
@@ -644,6 +646,22 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
                                                 </button>
                                             </div>
                                         </div>
+                                        <div className="space-y-2">
+                                            <label htmlFor="numberOfCabs" className="text-sm text-slate-300">Number of Cabs</label>
+                                            <select
+                                                id="numberOfCabs"
+                                                value={numberOfCabs}
+                                                onChange={(e) => setNumberOfCabs(Number(e.target.value))}
+                                                className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-cyan-500 outline-none"
+                                            >
+                                                {[1, 2, 3].map((count) => (
+                                                    <option key={count} value={count} className="bg-slate-900">
+                                                        {count} {count === 1 ? "cab" : "cabs"}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            <p className="text-xs text-slate-400">Fare is calculated per cab.</p>
+                                        </div>
                                         <div className="space-y-2 relative">
                                             <label className="text-sm text-slate-300 flex items-center gap-2">
                                                 <MapPin size={16} className="text-cyan-400" />
@@ -757,6 +775,7 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
                                         <div className="space-y-2 text-sm text-cyan-100 mb-6">
                                             <div className="flex justify-between"><span>Distance</span><span>{kilometers} km</span></div>
                                             <div className="flex justify-between"><span>Duration</span><span>{hours} Hours</span></div>
+                                            <div className="flex justify-between"><span>Number of cabs</span><span>{numberOfCabs}</span></div>
                                             {pricingBreakdown?.breakdown.map((entry) => (
                                                 <div key={entry.label} className="flex justify-between text-cyan-50/90">
                                                     <span>{entry.label}</span>
@@ -778,6 +797,7 @@ export default function BookingPage({ cars, locations }: BookingPageProps) {
                                                 requiresAdvance={advanceBookingRequired}
                                                 bookingDetails={{
                                                     vehicle: selectedCar?.name || "Premium Car",
+                                                    numberOfCabs,
                                                     route: pickupLocation && dropLocation ? `${pickupLocation} → ${dropLocation}` : selectedLocation?.name || "Trip",
                                                     date: date,
                                                     time: time,

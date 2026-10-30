@@ -264,7 +264,8 @@ const Pay = ({ amount, name, email, phone, bookingDetails, requiresAdvance = fal
       }
       doc.text(`Vehicle: ${bookingDetails.vehicle || "Not provided"}`, 110, to ? 86 : 81);
       doc.text(`Trip: ${bookingDetails.tripType || (isHotelBooking ? "Hotel stay" : "Car booking")}`, 110, to ? 91 : 86);
-      doc.text(`Duration: ${duration} ${isHotelBooking ? "Night(s)" : "Hour(s)"}`, 110, to ? 96 : 91);
+      doc.text(`Cabs: ${bookingDetails.numberOfCabs || 1}`, 110, to ? 96 : 91);
+      doc.text(`Duration: ${duration} ${isHotelBooking ? "Night(s)" : "Hour(s)"}`, 110, to ? 101 : 96);
     }
 
     // -- Table --
